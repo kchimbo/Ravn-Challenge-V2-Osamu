@@ -1,9 +1,17 @@
-import { Controller, Delete, Get, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Patch,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Role } from '../../auth/types/roles.enum';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../../auth/guards/role.guard';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Product')
 @Controller('products')
@@ -36,6 +44,7 @@ export class ProductsController {
     summary: 'Create a new product',
   })
   @Post('/')
+  @ApiBearerAuth('access_token')
   @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard, RoleGuard)
   async createProduct() {
@@ -45,6 +54,7 @@ export class ProductsController {
   @ApiOperation({
     summary: 'Update product information',
   })
+  @ApiBearerAuth('access_token')
   @Put('/')
   @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard, RoleGuard)
@@ -54,8 +64,33 @@ export class ProductsController {
   }
 
   @ApiOperation({
+    summary: 'Add images to product',
+  })
+  @ApiBearerAuth('access_token')
+  @Post('/:id/images')
+  @Roles(Role.Manager)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  async addImagesToProduct() {
+    // also disable product
+    return 'add_images_to_product';
+  }
+
+  @ApiOperation({
+    summary: 'Remove images from product',
+  })
+  @ApiBearerAuth('access_token')
+  @Delete('/:id/images')
+  @Roles(Role.Manager)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  async deleteImagesFromProduct() {
+    // also disable product
+    return 'remove_images_to_product';
+  }
+
+  @ApiOperation({
     summary: 'Delete a product',
   })
+  @ApiBearerAuth('access_token')
   @Delete('/')
   @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard, RoleGuard)
@@ -66,6 +101,7 @@ export class ProductsController {
   @ApiOperation({
     summary: 'Like a product',
   })
+  @ApiBearerAuth('access_token')
   @Post('/:id/like')
   @UseGuards(JwtAuthGuard)
   async likeProduct() {
