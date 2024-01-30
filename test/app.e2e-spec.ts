@@ -64,7 +64,7 @@ describe('AuthController (e2e)', () => {
         email: credentials.manager.email.toLowerCase(),
       },
       data: {
-        role: Role.MANAGER,
+        role: Role.Manager,
       },
     });
   });
@@ -116,7 +116,7 @@ describe('AuthController (e2e)', () => {
           .expectJsonMatchStrict({
             id: like(1),
             email: credentials.manager.email.toLowerCase(),
-            role: Role.MANAGER,
+            role: Role.Manager,
           });
       });
       it('should throw an error if a client accesses /manager', async () => {
