@@ -6,6 +6,7 @@ export class RoleGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   matchRoles(roles: string[], userRole: string) {
+    console.log({ roles, userRole });
     return roles.some((role) => role === userRole);
   }
 

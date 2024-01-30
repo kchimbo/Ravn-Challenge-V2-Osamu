@@ -11,13 +11,54 @@ datasource db {
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  email    String @unique
-  password String
-  role     Role   @default(CLIENT)
+  id             Int              @id @default(autoincrement())
+  email          String           @unique
+  password       String
+  role           Role             @default(CLIENT)
+  LikesOnProduct LikesOnProduct[]
 }
 
 enum Role {
   CLIENT
   MANAGER
+}
+
+model Category {
+  id      Int       @id @default(autoincrement())
+  name    String
+  slug    String    @unique
+  Product Product[]
+}
+
+model Product {
+  id             Int              @id @default(autoincrement())
+  name           String
+  description    String?
+  price          Int
+  stock          Int
+  category       Category         @relation(fields: [categoryId], references: [id])
+  categoryId     Int
+  Image          Image[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  deletedAt      DateTime?
+  isDisabled     Boolean          @default(false)
+  LikesOnProduct LikesOnProduct[]
+}
+
+model Image {
+  id        Int     @id @default(autoincrement())
+  url       String
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+}
+
+model LikesOnProduct {
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  likedAt   DateTime @default(now())
+
+  @@id([userId, productId])
 }

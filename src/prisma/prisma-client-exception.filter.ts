@@ -1,5 +1,6 @@
 import {
   ArgumentsHost,
+  BadGatewayException,
   Catch,
   ExceptionFilter,
   HttpStatus,
@@ -14,17 +15,22 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
     const response: Response = ctx.getResponse<Response>();
     // const message = exception.message.replace(/\n/g, '');
     // console.log(exception.meta);
+    console.log(exception);
+    console.log('Exception has been thrown');
     switch (exception.code) {
       case 'P2002': // unique
         const status = HttpStatus.CONFLICT;
+        console.log('Handling exception');
         response.status(status).json({
           statusCode: status,
           message: `${exception?.meta?.target} already exists`,
         });
         break;
       case 'P2025':
-        break;
+        response.status(209);
       default:
+        console.log(exception);
+        console.log('bad');
         super.catch(exception, host);
         break;
     }
