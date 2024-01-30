@@ -18,7 +18,10 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException();
     }
-    const { accessToken, refreshToken } = await this.getJwtTokens(user.id);
+    const { accessToken, refreshToken } = await this.getJwtTokens(
+      user.id,
+      user.role,
+    );
     return {
       accessToken,
       refreshToken,
@@ -27,6 +30,10 @@ export class AuthService {
 
   async register(email: string, password: string) {
     return await this.usersService.create(email, password);
+  }
+
+  async getUser(id: number) {
+    return await this.usersService.getById(id);
   }
 
   private async validateUser(
@@ -42,16 +49,17 @@ export class AuthService {
     return null;
   }
 
-  private async getJwtTokens(userId: number) {
+  private async getJwtTokens(userId: number, userRole: string) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         {
           sub: userId,
           jti: uuidv4(),
+          role: userRole,
         },
         {
           secret: this.configService.get<string>('auth.accessTokenSecret'),
-          expiresIn: '15min',
+          expiresIn: '150min',
         },
       ),
       this.jwtService.signAsync(
