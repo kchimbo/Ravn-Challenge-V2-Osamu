@@ -47,7 +47,6 @@ export class ProductsController {
   @ApiOperation({
     summary: 'Get product details',
   })
-  @ApiBearerAuth('access_token')
   @ApiParam({
     name: 'id',
     required: true,

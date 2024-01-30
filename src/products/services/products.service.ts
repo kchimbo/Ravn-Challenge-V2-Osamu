@@ -14,6 +14,10 @@ export class ProductsService {
     return this.prisma.product.findMany({
       take: limit,
       skip: offset,
+      where: {
+        isDisabled: false,
+        deletedAt: null,
+      },
     });
   }
 
