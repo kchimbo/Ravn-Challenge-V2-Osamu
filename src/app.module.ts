@@ -8,6 +8,7 @@ import configuration from './configuration';
 import { JwtStrategy } from './auth/jwt.strategy';
 import { ProductsController } from './products/controllers/products.controller';
 import { ProductsService } from './products/services/products.service';
+import { ProductsModule } from './products/products.module';
 
 @Module({
   imports: [
@@ -17,8 +18,9 @@ import { ProductsService } from './products/services/products.service';
     }),
     AuthModule,
     UsersModule,
+    ProductsModule,
   ],
-  controllers: [AppController, ProductsController],
-  providers: [AppService, JwtStrategy, ProductsService],
+  controllers: [AppController],
+  providers: [AppService, JwtStrategy],
 })
 export class AppModule {}
