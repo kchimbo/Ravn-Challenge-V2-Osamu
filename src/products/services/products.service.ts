@@ -21,7 +21,9 @@ export class ProductsService {
     try {
       return await this.prisma.product.findUniqueOrThrow({
         where: {
-          id: 1,
+          id: productId,
+          isDisabled: false,
+          deletedAt: null,
         },
       });
     } catch (err) {

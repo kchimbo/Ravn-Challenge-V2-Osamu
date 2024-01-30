@@ -53,6 +53,7 @@ export class ProductsController {
     required: true,
     description: 'The id of the product',
   })
+  @UseInterceptors(new TransformDataInterceptor(ProductDetailsDto))
   async getProductDetails(@Param('id', ParseIntPipe) productId: number) {
     return this.productsService.getProductDetails(productId);
   }
