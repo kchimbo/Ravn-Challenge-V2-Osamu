@@ -8,6 +8,7 @@ import {
   Post,
   Put,
   Query,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
   UsePipes,
@@ -19,8 +20,12 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../../auth/guards/role.guard';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
+  ApiQuery,
+  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { GetCurrentUserId } from '../../auth/decorators/get-current-user-id.decorator';
@@ -28,6 +33,7 @@ import { ProductsService } from '../services/products.service';
 import { TransformDataInterceptor } from '../../utils/transform-data.interceptor';
 import { ProductDetailsDto } from '../dto/product-details.dto';
 import { PaginationParamsDto } from '../dto/pagination-params.dto';
+import { FilesInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Product')
 @Controller('products')
@@ -60,9 +66,22 @@ export class ProductsController {
   @ApiOperation({
     summary: 'Search products by category',
   })
-  @Get('/:category/:search')
-  async searchProducts() {
-    return 'search_products';
+  @Get('/search')
+  @ApiQuery({
+    name: 'q',
+    type: 'string',
+    description: 'The name of the product',
+  })
+  @ApiQuery({
+    name: 'category',
+    type: 'string',
+    description: 'The category of the product',
+  })
+  async searchProducts(
+    @Query('q') productName: string,
+    @Query('category') category?: string,
+  ) {
+    return this.productsService.getProductsByCategory(productName, category);
   }
 
   @ApiOperation({
@@ -73,7 +92,7 @@ export class ProductsController {
   @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard, RoleGuard)
   async createProduct() {
-    return 'create_product';
+    return this.productsService.createProduct();
   }
 
   @ApiOperation({
@@ -104,12 +123,50 @@ export class ProductsController {
     required: true,
     description: 'The id of the product',
   })
+  @ApiConsumes('multipart/form-data')
+  @ApiParam({
+    name: 'id',
+    description: 'The id of the product',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'The images were successfully uploaded and added to the product',
+  })
+  @ApiResponse({
+    status: 404,
+    description:
+      "The product that you're trying to upload the image does not exists",
+  })
+  @ApiResponse({
+    status: 500,
+    description:
+      'An internal server error occurred while trying to upload the image',
+  })
   @Post('/:id/images')
+  @UseInterceptors(FilesInterceptor('files'))
   @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard, RoleGuard)
-  async addImagesToProduct() {
-    // also disable product
-    return 'add_images_to_product';
+  async addImagesToProduct(
+    @Param('id', ParseIntPipe) productId: number,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+  ) {
+    console.log(files);
+    return this.productsService.addImagesToProduct();
   }
 
   @ApiOperation({
@@ -120,8 +177,7 @@ export class ProductsController {
   @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard, RoleGuard)
   async deleteImagesFromProduct() {
-    // also disable product
-    return 'remove_images_to_product';
+    return this.productsService.removeImagesFromProduct();
   }
 
   @ApiOperation({

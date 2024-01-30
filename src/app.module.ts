@@ -9,6 +9,7 @@ import { JwtStrategy } from './auth/jwt.strategy';
 import { ProductsController } from './products/controllers/products.controller';
 import { ProductsService } from './products/services/products.service';
 import { ProductsModule } from './products/products.module';
+import { AwsModule } from './aws/aws.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ProductsModule } from './products/products.module';
     AuthModule,
     UsersModule,
     ProductsModule,
+    AwsModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],

@@ -35,8 +35,17 @@ export class ProductsService {
     }
   }
 
-  async getProductsByCategory() {
-    return 'search_by_category';
+  async getProductsByCategory(productName: string, category?: string) {
+    return this.prisma.product.findMany({
+      where: {
+        name: productName,
+        isDisabled: false,
+        deletedAt: null,
+        category: {
+          slug: category,
+        },
+      },
+    });
   }
 
   async createProduct() {
@@ -44,8 +53,18 @@ export class ProductsService {
   }
 
   async updateProduct(productId: number, details: ProductDetailsDto) {
-    console.log(details);
-    return 'update_product';
+    try {
+      return await this.prisma.product.update({
+        where: {
+          id: productId,
+        },
+        data: {
+          ...details,
+        },
+      });
+    } catch (err) {
+      this.handleNotFoundException(err, productId);
+    }
   }
 
   async addImagesToProduct() {
