@@ -6,22 +6,22 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { ValidBody } from '../utils/decorators';
-import { AuthDto } from './dto/auth.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AuthService } from '../services/auth.service';
+import { ValidBody } from '../../utils/decorators';
+import { AuthDto } from '../dto/auth.dto';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import {
   ApiBearerAuth,
   ApiTags,
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
-import { GetCurrentUserId } from './decorators/get-current-user-id.decorator';
-import { UserDto } from './dto/user.dto';
-import { TransformDataInterceptor } from '../utils/transform-data.interceptor';
-import { RoleGuard } from './guards/role.guard';
-import { Roles } from './decorators/roles.decorator';
-import { Role } from './types/roles.enum';
+import { GetCurrentUserId } from '../decorators/get-current-user-id.decorator';
+import { UserDto } from '../dto/user.dto';
+import { TransformDataInterceptor } from '../../utils/transform-data.interceptor';
+import { RoleGuard } from '../guards/role.guard';
+import { Roles } from '../decorators/roles.decorator';
+import { Role } from '../types/roles.enum';
 
 @ApiTags('Authentication')
 @Controller('auth')
