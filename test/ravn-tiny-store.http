@@ -1,0 +1,26 @@
+### Register a new user
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body['accessToken']);
+  client.global.set("refreshToken", response.body['refreshToken'])
+%}
+
+### Get information about the current user
+GET {{host}}/auth/me
+Authorization: Bearer {{accessToken}}
