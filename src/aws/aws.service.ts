@@ -21,8 +21,6 @@ export class AwsService {
           Bucket: this.bucketName,
           Body: dataBuffer,
           Key: `${filename}`,
-          ACL: `public-read`,
-          ContentDisposition: 'inline',
         })
         .promise();
     } catch (err) {

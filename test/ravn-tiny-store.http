@@ -3,17 +3,26 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "email": "{{email}}",
-  "password": "{{password}}"
+  "email": "{{$random.email}}",
+  "password": "{{$random.alphabetic(6)}}"
 }
 
-### Login
+### Login as a client
 POST {{host}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "{{email}}",
-  "password": "{{password}}"
+  "email": "{{clientEmail}}",
+  "password": "{{clientPassword}}"
+}
+
+### Login as a manager
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{managerEmail}}",
+  "password": "{{managerPassword}}"
 }
 
 > {%
@@ -24,3 +33,40 @@ Content-Type: application/json
 ### Get information about the current user
 GET {{host}}/auth/me
 Authorization: Bearer {{accessToken}}
+
+### Add a single image to product
+POST {{host}}/products/1/images
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{ accessToken }}
+
+--boundary
+Content-Disposition: form-data; name="files"; filename="input.txt"
+
+< ./input.txt
+--boundary
+
+### Add multiple images to product
+POST {{host}}/products/1/images
+Content-Type: multipart/form-data; boundary=boundary
+Authorization: Bearer {{ accessToken }}
+
+--boundary
+Content-Disposition: form-data; name="files"; filename="input1.txt"
+
+< ./input.txt
+--boundary
+
+--boundary
+Content-Disposition: form-data; name="files"; filename="input2.txt"
+
+< ./input.txt
+--boundary
+
+
+
+
+
+### Delete images from product
+DELETE {{host}}/products/1/images
+Content-Type: application/json
+Authorization: Bearer {{ accessToken }}

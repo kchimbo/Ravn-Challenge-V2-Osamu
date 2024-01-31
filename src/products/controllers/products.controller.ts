@@ -165,8 +165,7 @@ export class ProductsController {
     @Param('id', ParseIntPipe) productId: number,
     @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
-    console.log(files);
-    return this.productsService.addImagesToProduct();
+    return this.productsService.addImagesToProduct(productId, files);
   }
 
   @ApiOperation({
@@ -176,8 +175,8 @@ export class ProductsController {
   @Delete('/:id/images')
   @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard, RoleGuard)
-  async deleteImagesFromProduct() {
-    return this.productsService.removeImagesFromProduct();
+  async deleteImagesFromProduct(@Param('id', ParseIntPipe) productId: number) {
+    return this.productsService.removeImagesFromProduct(productId);
   }
 
   @ApiOperation({

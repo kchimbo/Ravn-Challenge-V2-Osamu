@@ -5,10 +5,16 @@ import { ProductAlreadyLiked } from '../exceptions/product-already-liked';
 import { ProductNotFoundException } from '../exceptions/product-not-found.exception';
 import { PrismaError } from '../../prisma/prisma.errors';
 import { ProductDetailsDto } from '../dto/product-details.dto';
+import { AwsService } from '../../aws/aws.service';
+import { v4 as uuidv4 } from 'uuid';
+import { forkJoin, map, mergeMap, of, reduce, switchMap } from 'rxjs';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private aws: AwsService,
+  ) {}
 
   async listProduct(offset: number, limit: number) {
     return this.prisma.product.findMany({
@@ -67,12 +73,59 @@ export class ProductsService {
     }
   }
 
-  async addImagesToProduct() {
-    return 'add_images_to_product';
+  async addImagesToProduct(
+    productId: number,
+    files: Array<Express.Multer.File>,
+  ) {
+    return of(...files).pipe(
+      mergeMap((file) => this.uploadFile(file)),
+      reduce(
+        (acc, i) => [
+          ...acc,
+          { url: i.Location, filename: i.Key, productId: productId },
+        ],
+        [],
+      ),
+      map(async (data) => {
+        const result = await this.prisma.image.createMany({
+          data,
+        });
+        console.log(result);
+        return result;
+      }),
+    );
   }
 
-  async removeImagesFromProduct() {
-    return 'remove_images_from_product';
+  async removeImagesFromProduct(productId: number) {
+    const productImage = await this.prisma.image.findMany({
+      where: {
+        productId: productId,
+      },
+      select: {
+        id: true,
+        filename: true,
+      },
+    });
+    return of(...productImage).pipe(
+      mergeMap(({ id, filename }) =>
+        forkJoin([of(id), this.aws.deleteFile(filename)]),
+      ),
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      reduce((acc, [id, _]) => [...acc, id], []),
+      switchMap(async (result) =>
+        this.prisma.image.deleteMany({
+          where: {
+            id: {
+              in: result,
+            },
+          },
+        }),
+      ),
+    );
+  }
+
+  async removeImageFromProduct(imageId: number) {
+    return 'remove image';
   }
 
   async deleteProduct(productId: number) {
@@ -115,6 +168,12 @@ export class ProductsService {
       throw err;
     }
     return null;
+  }
+
+  private async uploadFile(file: Express.Multer.File) {
+    const extension = file.originalname.split('.').slice(-1);
+    const filename = `${uuidv4()}.${extension}`;
+    return await this.aws.uploadFile(file.buffer, filename);
   }
 
   private handleNotFoundException(err: Error, productId: number) {
