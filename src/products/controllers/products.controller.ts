@@ -211,14 +211,25 @@ export class ProductsController {
   }
 
   @ApiOperation({
-    summary: 'Remove image(s) from product',
+    summary: 'Remove all the image from a from product',
   })
   @ApiBearerAuth('access_token')
   @Delete('/:id/images')
   @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard, RoleGuard)
   async deleteImagesFromProduct(@Param('id', ParseIntPipe) productId: number) {
-    return this.productsService.removeImagesFromProduct(productId);
+    return this.productsService.removeImagesFromProduct({ productId });
+  }
+
+  @ApiOperation({
+    summary: 'Remove image from product',
+  })
+  @ApiBearerAuth('access_token')
+  @Delete('/images/:id')
+  @Roles(Role.Manager)
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  async deleteImageFromProduct(@Param('id', ParseIntPipe) id: number) {
+    return this.productsService.removeImagesFromProduct({ id });
   }
 
   @ApiOperation({

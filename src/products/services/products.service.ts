@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { forkJoin, map, mergeMap, of, reduce, switchMap } from 'rxjs';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { CategoryNotFoundException } from '../exceptions/category-not-found.exception';
+import { DeleteImageDto } from '../dto/delete-image.dto';
 
 @Injectable()
 export class ProductsService {
@@ -140,11 +141,9 @@ export class ProductsService {
     );
   }
 
-  async removeImagesFromProduct(productId: number) {
+  async removeImagesFromProduct(deleteImageParameters: DeleteImageDto) {
     const productImage = await this.prisma.image.findMany({
-      where: {
-        productId: productId,
-      },
+      where: deleteImageParameters,
       select: {
         id: true,
         filename: true,
@@ -166,10 +165,6 @@ export class ProductsService {
         }),
       ),
     );
-  }
-
-  async removeImageFromProduct(imageId: number) {
-    return 'remove image';
   }
 
   async deleteProduct(productId: number) {
