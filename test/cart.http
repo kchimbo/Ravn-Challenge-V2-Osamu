@@ -1,0 +1,26 @@
+### Login as a client
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{clientEmail}}",
+  "password": "{{clientPassword}}"
+}
+
+### Login as a manager
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{managerEmail}}",
+  "password": "{{managerPassword}}"
+}
+
+> {%
+  client.global.set("accessToken", response.body['accessToken']);
+  client.global.set("refreshToken", response.body['refreshToken'])
+%}
+
+### Get current cart
+GET {{host}}/carts
+Authorization: Bearer {{accessToken}}

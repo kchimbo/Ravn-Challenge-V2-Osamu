@@ -6,11 +6,10 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import configuration from './configuration';
 import { JwtStrategy } from './auth/jwt.strategy';
-import { ProductsController } from './products/controllers/products.controller';
-import { ProductsService } from './products/services/products.service';
 import { ProductsModule } from './products/products.module';
 import { AwsModule } from './aws/aws.module';
-import { MemoryStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
+import { OrdersModule } from './orders/orders.module';
+import { CartsModule } from './carts/carts.module';
 
 @Module({
   imports: [
@@ -22,6 +21,9 @@ import { MemoryStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
     UsersModule,
     ProductsModule,
     AwsModule,
+    CartsModule,
+    OrdersModule,
+    CartsModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],
