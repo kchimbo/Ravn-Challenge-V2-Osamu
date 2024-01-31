@@ -70,3 +70,38 @@ Content-Disposition: form-data; name="files"; filename="input2.txt"
 DELETE {{host}}/products/1/images
 Content-Type: application/json
 Authorization: Bearer {{ accessToken }}
+
+
+### Creating a new product
+POST {{host}}/products
+Authorization: Bearer {{ accessToken }}
+Content-Type: multipart/form-data; boundary=boundary
+
+
+--boundary
+Content-Disposition: form-data; name="name"
+
+foobar
+--boundary
+Content-Disposition: form-data; name="description"
+
+
+--boundary
+Content-Disposition: form-data; name="price"
+
+999
+--boundary
+Content-Disposition: form-data; name="stock"
+
+10
+--boundary
+Content-Disposition: form-data; name="files"
+
+
+--boundary
+
+--boundary
+Content-Disposition: form-data; name="category"
+
+foobar
+--boundary

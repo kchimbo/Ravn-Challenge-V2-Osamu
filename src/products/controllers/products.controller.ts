@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -34,6 +35,9 @@ import { TransformDataInterceptor } from '../../utils/transform-data.interceptor
 import { ProductDetailsDto } from '../dto/product-details.dto';
 import { PaginationParamsDto } from '../dto/pagination-params.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { FormDataRequest } from 'nestjs-form-data';
+import { ValidBody } from '../../utils/decorators';
 
 @ApiTags('Product')
 @Controller('products')
@@ -87,12 +91,50 @@ export class ProductsController {
   @ApiOperation({
     summary: 'Create a new product',
   })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          default: 'foobar',
+        },
+        description: {
+          type: 'string',
+        },
+        price: {
+          type: 'number',
+          default: 999,
+        },
+        stock: {
+          type: 'number',
+          default: 10,
+        },
+        category: {
+          type: 'string',
+          default: 'snacks',
+        },
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+    },
+  })
   @Post('/')
   @ApiBearerAuth('access_token')
   @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard, RoleGuard)
-  async createProduct() {
-    return this.productsService.createProduct();
+  @UseInterceptors(FilesInterceptor('files'))
+  async createProduct(
+    @ValidBody() product: CreateProductDto,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+  ) {
+    return this.productsService.createProduct(product, files);
   }
 
   @ApiOperation({

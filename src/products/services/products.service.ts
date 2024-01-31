@@ -8,6 +8,8 @@ import { ProductDetailsDto } from '../dto/product-details.dto';
 import { AwsService } from '../../aws/aws.service';
 import { v4 as uuidv4 } from 'uuid';
 import { forkJoin, map, mergeMap, of, reduce, switchMap } from 'rxjs';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { CategoryNotFoundException } from '../exceptions/category-not-found.exception';
 
 @Injectable()
 export class ProductsService {
@@ -54,8 +56,51 @@ export class ProductsService {
     });
   }
 
-  async createProduct() {
-    return 'create_product';
+  async createProduct(
+    product: CreateProductDto,
+    files: Array<Express.Multer.File>,
+  ) {
+    let categoryId;
+    console.log(product);
+    console.log(files);
+    // check if category exists
+    try {
+      categoryId = await this.prisma.category.findUniqueOrThrow({
+        where: {
+          slug: product.category,
+        },
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === PrismaError.ModelDoesNotExist
+      ) {
+        throw new CategoryNotFoundException(product.category);
+      }
+      throw err;
+    }
+
+    const [{ id }] = await this.prisma.$transaction([
+      this.prisma.product.create({
+        data: {
+          ...product,
+          category: {
+            connect: {
+              id: categoryId.id,
+            },
+          },
+        },
+      }),
+    ]);
+
+    if (files.length > 0) {
+      console.log('Creating new files');
+      await this.addImagesToProduct(id, files).toPromise();
+    } else {
+      console.log('Files are empty. Skipping');
+    }
+
+    return id;
   }
 
   async updateProduct(productId: number, details: ProductDetailsDto) {
@@ -73,10 +118,9 @@ export class ProductsService {
     }
   }
 
-  async addImagesToProduct(
-    productId: number,
-    files: Array<Express.Multer.File>,
-  ) {
+  addImagesToProduct(productId: number, files: Array<Express.Multer.File>) {
+    console.log('Adding new images to product');
+    console.log(files);
     return of(...files).pipe(
       mergeMap((file) => this.uploadFile(file)),
       reduce(
@@ -171,6 +215,7 @@ export class ProductsService {
   }
 
   private async uploadFile(file: Express.Multer.File) {
+    console.log('Uploading file');
     const extension = file.originalname.split('.').slice(-1);
     const filename = `${uuidv4()}.${extension}`;
     return await this.aws.uploadFile(file.buffer, filename);
