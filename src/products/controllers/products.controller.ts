@@ -132,7 +132,7 @@ export class ProductsController {
   @UseInterceptors(FilesInterceptor('files'))
   async createProduct(
     @ValidBody() product: CreateProductDto,
-    @UploadedFiles() files: Array<Express.Multer.File>,
+    @UploadedFiles() files?: Array<Express.Multer.File>,
   ) {
     return this.productsService.createProduct(product, files);
   }

@@ -7,7 +7,15 @@ import { PrismaError } from '../../prisma/prisma.errors';
 import { ProductDetailsDto } from '../dto/product-details.dto';
 import { AwsService } from '../../aws/aws.service';
 import { v4 as uuidv4 } from 'uuid';
-import { forkJoin, mergeMap, of, reduce, switchMap, tap } from 'rxjs';
+import {
+  forkJoin,
+  lastValueFrom,
+  mergeMap,
+  of,
+  reduce,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { CategoryNotFoundException } from '../exceptions/category-not-found.exception';
 import { DeleteImageDto } from '../dto/delete-image.dto';
@@ -80,7 +88,7 @@ export class ProductsService {
 
   async createProduct(
     product: CreateProductDto,
-    files: Array<Express.Multer.File>,
+    files?: Array<Express.Multer.File>,
   ) {
     let categoryId;
     console.log(product);
@@ -102,6 +110,8 @@ export class ProductsService {
       throw err;
     }
 
+    console.log(categoryId);
+
     const [{ id }] = await this.prisma.$transaction([
       this.prisma.product.create({
         data: {
@@ -115,9 +125,9 @@ export class ProductsService {
       }),
     ]);
 
-    if (files.length > 0) {
+    if (files != undefined && files.length > 0) {
       console.log('Creating new files');
-      await this.addImagesToProduct(id, files).toPromise();
+      await this.addImagesToProduct(id, files);
     } else {
       console.log('Files are empty. Skipping');
     }
@@ -140,21 +150,26 @@ export class ProductsService {
     }
   }
 
-  addImagesToProduct(productId: number, files: Array<Express.Multer.File>) {
-    return of(...files).pipe(
-      mergeMap(async (file) => await this.uploadFile(file)),
-      reduce(
-        (acc, i) => [
-          ...acc,
-          { url: i.Location, filename: i.Key, productId: productId },
-        ],
-        [],
+  async addImagesToProduct(
+    productId: number,
+    files: Array<Express.Multer.File>,
+  ) {
+    return lastValueFrom(
+      of(...files).pipe(
+        mergeMap(async (file) => await this.uploadFile(file)),
+        reduce(
+          (acc, i) => [
+            ...acc,
+            { url: i.Location, filename: i.Key, productId: productId },
+          ],
+          [],
+        ),
+        switchMap(async (data) => {
+          return this.prisma.image.createMany({
+            data,
+          });
+        }),
       ),
-      switchMap(async (data) => {
-        return this.prisma.image.createMany({
-          data,
-        });
-      }),
     );
   }
 
@@ -166,20 +181,21 @@ export class ProductsService {
         filename: true,
       },
     });
-    return of(...productImage).pipe(
-      mergeMap(({ id, filename }) =>
-        forkJoin([of(id), this.aws.deleteFile(filename)]),
-      ),
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      reduce((acc, [id, _]) => [...acc, id], []),
-      switchMap(async (result) =>
-        this.prisma.image.deleteMany({
-          where: {
-            id: {
-              in: result,
+    return await lastValueFrom(
+      of(...productImage).pipe(
+        mergeMap(({ id, filename }) =>
+          forkJoin([of(id), this.aws.deleteFile(filename)]),
+        ),
+        reduce((acc, [id, _]) => [...acc, id], []),
+        switchMap(async (result) =>
+          this.prisma.image.deleteMany({
+            where: {
+              id: {
+                in: result,
+              },
             },
-          },
-        }),
+          }),
+        ),
       ),
     );
   }

@@ -12,6 +12,8 @@ import { PrismaError } from '../../prisma/prisma.errors';
 import { ProductNotFoundException } from '../exceptions/product-not-found.exception';
 import { ProductDetailsDto } from '../dto/product-details.dto';
 import { ProductAlreadyLiked } from '../exceptions/product-already-liked';
+import { CategoryNotFoundException } from '../exceptions/category-not-found.exception';
+import { DeleteImageDto } from '../dto/delete-image.dto';
 describe('ProductsService', () => {
   let service: ProductsService;
   let prismaService: DeepMockProxy<PrismaService>;
@@ -29,6 +31,7 @@ describe('ProductsService', () => {
           provide: AwsService,
           useValue: {
             uploadFile: jest.fn(),
+            deleteFile: jest.fn(),
           },
         },
       ],
@@ -155,7 +158,7 @@ describe('ProductsService', () => {
   /**
    * Add an image to a product
    */
-  it('should add image(s) to an existing product', (done) => {
+  it('should add image(s) to an existing product', async () => {
     jest
       .spyOn(awsService, 'uploadFile')
       .mockImplementation((buffer, filename) =>
@@ -165,36 +168,101 @@ describe('ProductsService', () => {
         }),
       );
 
-    service
-      .addImagesToProduct(100, [
+    await service.addImagesToProduct(100, [
+      {
+        filename: 'sample-file.png',
+        originalname: 'sample-file.png',
+        buffer: Buffer.from('image_data'),
+      } as Express.Multer.File,
+    ]);
+
+    expect(awsService.uploadFile).toHaveBeenCalled();
+    expect(prismaService.image.createMany).toHaveBeenCalledWith({
+      data: [
         {
-          filename: 'sample-file.png',
-          originalname: 'sample-file.png',
-          buffer: Buffer.from('image_data'),
-        } as Express.Multer.File,
-      ])
-      .subscribe(() => {
-        expect(awsService.uploadFile).toHaveBeenCalled();
-        expect(prismaService.image.createMany).toHaveBeenCalledWith({
-          data: [
-            {
-              filename: 'mocked-uuid.png',
-              productId: 100,
-              url: 'aws_url/mocked-uuid.png',
-            },
-          ],
-        });
-        done();
-      });
+          filename: 'mocked-uuid.png',
+          productId: 100,
+          url: 'aws_url/mocked-uuid.png',
+        },
+      ],
+    });
   });
 
   /**
    * Remove an image from a product
    */
+  it('should delete images from an existing product', async () => {
+    jest.spyOn(awsService, 'deleteFile').mockImplementation((filename) =>
+      Promise.resolve({
+        id: 1,
+      }),
+    );
+
+    prismaService.image.findMany.mockResolvedValue([
+      {
+        id: 1,
+        filename: 'image_to_be_deleted.png',
+        productId: 1,
+        url: 'aws/image_to_be_deleted.png',
+      },
+    ]);
+
+    await service.removeImagesFromProduct({ id: 1 });
+  });
 
   /**
    * Create a product
    */
+  it("createProduct throws an error if the category doesn't exists", async () => {
+    prismaService.category.findUniqueOrThrow.mockImplementation(() => {
+      throw new PrismaClientKnownRequestError('', {
+        code: PrismaError.ModelDoesNotExist,
+        clientVersion: '1',
+      });
+    });
+
+    await expect(
+      service.createProduct({
+        name: 'a new product',
+        description: '',
+        price: 99,
+        stock: 1,
+        category: 'sample-category-1',
+      }),
+    ).rejects.toThrow(CategoryNotFoundException);
+  });
+
+  it('createProduct should be able create a new product without an image', async () => {
+    prismaService.category.findUniqueOrThrow.mockResolvedValue({
+      id: 1,
+      name: 'Sample Category 1',
+      slug: 'sample-category-1',
+    });
+    prismaService.$transaction.mockResolvedValue([{ id: 100 }]);
+
+    await expect(
+      service.createProduct({
+        name: 'a new product',
+        description: '',
+        price: 99,
+        stock: 1,
+        category: 'sample-category-1',
+      }),
+    ).resolves.toBe(100);
+    expect(prismaService.product.create).toHaveBeenCalledWith({
+      data: {
+        name: 'a new product',
+        price: 99,
+        stock: 1,
+        description: '',
+        category: {
+          connect: {
+            id: 1,
+          },
+        },
+      },
+    });
+  });
 
   /**
    * Search product by category
