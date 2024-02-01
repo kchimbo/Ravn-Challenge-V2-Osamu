@@ -48,3 +48,7 @@ Content-Type: application/json
 POST {{host}}/carts
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
+
+### Delte current cart
+DELETE {{host}}/carts
+Authorization: Bearer {{accessToken}}

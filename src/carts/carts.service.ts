@@ -13,11 +13,13 @@ export class CartsService {
     return this.ordersService.createOrder(userId, cart);
   }
   async deleteCart(userId: number) {
-    return this.prismaService.cart.delete({
+    const r = this.prismaService.cart.delete({
       where: {
         userId,
       },
     });
+    console.log(r);
+    return r;
   }
 
   async getCart(userId: number) {
@@ -43,8 +45,15 @@ export class CartsService {
         },
       },
     });
+    console.log('My cart...');
+    console.log(cart.cartItem.map((item) => console.log(item)));
+    console.log('Done');
     const totalPrice = cart.cartItem
-      .map(({ quantity, product }) => quantity * product.price)
+      .map(({ quantity, product }) => {
+        console.log(product);
+        console.log(`Adding ${quantity} * ${product.price}`);
+        return quantity * product.price;
+      })
       .reduce((acc, current) => acc + current, 0);
 
     return { ...cart, totalPrice };
