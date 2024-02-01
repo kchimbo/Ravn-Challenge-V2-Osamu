@@ -23,7 +23,6 @@ import { CartsModule } from './carts/carts.module';
     AwsModule,
     CartsModule,
     OrdersModule,
-    CartsModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtStrategy],

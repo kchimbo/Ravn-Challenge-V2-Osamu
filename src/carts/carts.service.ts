@@ -1,18 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prima.service';
-import { use } from 'passport';
-import { CartDto } from './dto/cart.dto';
-
+import { OrdersService } from '../orders/orders.service';
 @Injectable()
 export class CartsService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly prismaService: PrismaService,
+  ) {}
 
-  /**
-   * Delete the cart and its associated items when the user completes an order
-   * @param userId the id of the user
-   */
+  async checkoutCart(userId: number) {
+    const cart = await this.getCart(userId);
+    return this.ordersService.createOrder(userId, cart);
+  }
   async deleteCart(userId: number) {
-    // 1. test if deleting the cart also deletes the cart items
     return this.prismaService.cart.delete({
       where: {
         userId,
@@ -72,7 +72,7 @@ export class CartsService {
    * @param productId the id of the product
    * @param quantity the quantity of the product
    */
-  async updateItemCart(userId: number, productId: number, quantity: number) {
+  async updateItemCart(userId: number, { products }) {
     // test
     // 1. add a new product to a user without cart
     // 2. update the quantity of existing product in the cart
@@ -80,32 +80,38 @@ export class CartsService {
     // 4. setting the quantity to zero deletes the items from the cart
     // 5. add a non-existant-product
     const cartId = await this.getOrCreateCart(userId);
-    if (!quantity) {
-      /* Avoid an error when the product doesn't exist */
-      this.prismaService.cartItem.deleteMany({
-        where: {
-          cartId,
-          productId,
-        },
-      });
-      return null; // return current cart items
+    console.log('Got ' + cartId);
+    if (products.length == 0) {
+      return null;
     }
-    this.prismaService.cartItem.upsert({
-      where: {
-        cartId_productId: {
-          cartId,
-          productId,
-        },
-      },
-      update: {
-        quantity,
-      },
-      create: {
-        cartId,
-        productId,
-        quantity,
-      },
-    });
-    return null;
+    for (const { productId, quantity } of products) {
+      if (!quantity) {
+        /* Avoid an error when the product doesn't exist */
+        await this.prismaService.cartItem.deleteMany({
+          where: {
+            cartId,
+            productId,
+          },
+        });
+      } else {
+        await this.prismaService.cartItem.upsert({
+          where: {
+            cartId_productId: {
+              cartId,
+              productId,
+            },
+          },
+          update: {
+            quantity,
+          },
+          create: {
+            cartId,
+            productId,
+            quantity,
+          },
+        });
+      }
+    }
+    return this.getCart(userId);
   }
 }

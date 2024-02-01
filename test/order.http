@@ -7,6 +7,12 @@ Content-Type: application/json
   "password": "{{clientPassword}}"
 }
 
+> {%
+  client.global.set("accessToken", response.body['accessToken']);
+  client.global.set("refreshToken", response.body['refreshToken'])
+%}
+
+
 ### Login as a manager
 POST {{host}}/auth/login
 Content-Type: application/json
@@ -21,30 +27,10 @@ Content-Type: application/json
   client.global.set("refreshToken", response.body['refreshToken'])
 %}
 
-### Get current cart
-GET {{host}}/carts
+### Get all orders of the current user
+GET {{host}}/orders
 Authorization: Bearer {{accessToken}}
 
-### Adding item to cart
-PATCH {{host}}/carts
+### Get all orders of the specified user
+GET {{host}}/orders/3
 Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "products": [
-    {
-      "productId": 1,
-      "quantity": 1
-    }
-  ]
-}
-
-### Adding item to cart
-DELETE {{host}}/carts
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-### Complete the order using the current cart
-POST {{host}}/carts
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
