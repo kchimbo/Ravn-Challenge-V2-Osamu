@@ -8,15 +8,16 @@ import { PrismaService } from '../src/prisma/prima.service';
 import { faker } from '@faker-js/faker';
 import { like } from 'pactum-matchers';
 import { Role } from '../src/auth/types/roles.enum';
+import { canReferenceNode } from '@nestjs/swagger/dist/plugin/utils/plugin-utils';
 
 const credentials = {
   client: {
-    email: faker.internet.email(),
-    password: faker.internet.password(),
+    email: 'client@example.com',
+    password: 'secret_password',
   },
   manager: {
-    email: faker.internet.email(),
-    password: faker.internet.password(),
+    email: 'manager@example.com',
+    password: 'secret_password',
   },
 };
 
@@ -36,37 +37,13 @@ describe('AuthController (e2e)', () => {
     app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));
 
     prisma = app.get(PrismaService);
-    prisma.cleanDb();
+    await prisma.cleanDb();
+    await prisma.seedUsers();
 
     await app.init();
     await app.listen(3000);
 
     pactum.request.setBaseUrl('http://localhost:3000');
-    pactum.stash.addDataMap({
-      existingEmail: credentials.client.email,
-      existingPassword: credentials.client.password,
-      existingManagerEmail: credentials.manager.email,
-      existingManagerPassword: credentials.manager.password,
-    });
-
-    await pactum.spec().post('/auth/register').withJson({
-      email: '$M{existingEmail}',
-      password: '$M{existingPassword}',
-    });
-
-    await pactum.spec().post('/auth/register').withJson({
-      email: '$M{existingManagerEmail}',
-      password: '$M{existingManagerPassword}',
-    });
-
-    await prisma.user.update({
-      where: {
-        email: credentials.manager.email.toLowerCase(),
-      },
-      data: {
-        role: Role.Manager,
-      },
-    });
   });
 
   afterAll(() => {
@@ -83,27 +60,27 @@ describe('AuthController (e2e)', () => {
       });
       it('should return information about the user if the user is a client and visits /me', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
-          email: '$M{existingEmail}',
-          password: `$M{existingPassword}`,
+          email: credentials.client.email,
+          password: credentials.client.password,
         });
 
         const accessToken = response.json.accessToken;
 
-        return pactum
+        await pactum
           .spec()
           .get('/auth/me')
           .withBearerToken(accessToken)
           .expectStatus(200)
           .expectJsonMatchStrict({
             id: like(1),
-            email: credentials.client.email.toLowerCase(),
+            email: credentials.client.email,
             role: Role.Client,
           });
       });
       it('should return information about the user if the user is a manager and visits /me', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
-          email: '$M{existingManagerEmail}',
-          password: `$M{existingManagerPassword}`,
+          email: credentials.manager.email,
+          password: credentials.manager.password,
         });
 
         const accessToken = response.json.accessToken;
@@ -115,14 +92,14 @@ describe('AuthController (e2e)', () => {
           .expectStatus(200)
           .expectJsonMatchStrict({
             id: like(1),
-            email: credentials.manager.email.toLowerCase(),
+            email: credentials.manager.email,
             role: Role.Manager,
           });
       });
       it('should throw an error if a client accesses /manager', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
-          email: '$M{existingEmail}',
-          password: `$M{existingPassword}`,
+          email: credentials.client.email,
+          password: credentials.client.password,
         });
 
         const accessToken = response.json.accessToken;
@@ -135,8 +112,8 @@ describe('AuthController (e2e)', () => {
       });
       it('should return a message if a manager accesses /manager', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
-          email: '$M{existingManagerEmail}',
-          password: `$M{existingManagerPassword}`,
+          email: credentials.manager.email,
+          password: credentials.manager.password,
         });
 
         const accessToken = response.json.accessToken;
@@ -177,19 +154,18 @@ describe('AuthController (e2e)', () => {
           .spec()
           .post('/auth/login')
           .withJson({
-            email: '$M{existingEmail}',
+            email: 'client@example.com',
             password: faker.internet.password(),
           })
           .expectStatus(401);
       });
       it('should return accessToken and refreshToken if credentials are correct', () => {
-        // TODO: Check for token in the response
         return pactum
           .spec()
           .post('/auth/login')
           .withJson({
-            email: '$M{existingEmail}',
-            password: '$M{existingPassword}',
+            email: credentials.client.email,
+            password: credentials.manager.password,
           })
           .expectStatus(200)
           .expectJsonMatchStrict({
@@ -226,7 +202,7 @@ describe('AuthController (e2e)', () => {
           .spec()
           .post('/auth/register')
           .withJson({
-            email: '$M{existingEmail}',
+            email: credentials.client.email,
             password: faker.internet.password(),
           })
           .expectStatus(409);

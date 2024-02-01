@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
-
+import { Prisma, PrismaClient, Role } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
@@ -41,6 +41,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       // User
       this.user.deleteMany(),
     ]);
+  }
+
+  async seedUsers() {
+    const hashedPassword = await bcrypt.hash('secret_password', 12);
+    console.log(hashedPassword);
+    return this.user.createMany({
+      data: [
+        {
+          email: 'client@example.com',
+          password: hashedPassword,
+        },
+        {
+          email: 'manager@example.com',
+          password: hashedPassword,
+          role: Role.MANAGER,
+        },
+      ],
+    });
   }
 
   productSoftDeleteMiddleware: Prisma.Middleware = async (params, next) => {
