@@ -49,8 +49,8 @@ export class ProductsController {
   })
   @UseInterceptors(new TransformDataInterceptor(ProductDetailsDto))
   @UsePipes(new ValidationPipe({ transform: true }))
-  async listProducts(@Query() { offset, limit }: PaginationParamsDto) {
-    return this.productsService.listProduct(offset, limit);
+  async listProducts(@Query() { cursor, limit }: PaginationParamsDto) {
+    return this.productsService.listProduct(limit, cursor);
   }
 
   @Get('/:id')

@@ -12,6 +12,6 @@ export class PaginationParamsDto {
   @IsOptional()
   @Transform(({ value }) => Number(value))
   @IsNumber()
-  @Min(0)
-  offset: number = 0;
+  @Min(1)
+  cursor: number;
 }

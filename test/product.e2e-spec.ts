@@ -8,6 +8,7 @@ import { PrismaService } from '../src/prisma/prima.service';
 import { faker } from '@faker-js/faker';
 import { like } from 'pactum-matchers';
 import { Role } from '../src/auth/types/roles.enum';
+import { createSampleData } from '../src/main';
 
 const credentials = {
   client: {
@@ -36,88 +37,22 @@ describe('ProductController (e2e)', () => {
     app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));
 
     prisma = app.get(PrismaService);
-    prisma.cleanDb();
+    await prisma.cleanDb();
+    await createSampleData(prisma);
 
     await app.init();
     await app.listen(3000);
 
     pactum.request.setBaseUrl('http://localhost:3000');
 
-    const categoryName = faker.commerce.department();
-    const categoryNameSlug = faker.helpers.slugify(categoryName).toLowerCase();
-
-    const inStockObject = await prisma.product.create({
-      data: {
-        name: faker.commerce.productName(),
-        description: faker.commerce.productDescription(),
-        stock: faker.number.int({ min: 1, max: 10 }),
-        price: faker.number.int({ min: 100, max: 999 }),
-        category: {
-          create: {
-            name: categoryName,
-            slug: categoryNameSlug,
-          },
-        },
-      },
-    });
-
-    const deletedObject = await prisma.product.create({
-      data: {
-        name: faker.commerce.productName(),
-        description: faker.commerce.productDescription(),
-        stock: faker.number.int({ min: 1, max: 10 }),
-        price: faker.number.int({ min: 100, max: 999 }),
-        deletedAt: new Date(),
-        category: {
-          connect: {
-            slug: categoryNameSlug,
-          },
-        },
-      },
-    });
-
-    const disabledObject = await prisma.product.create({
-      data: {
-        name: faker.commerce.productName(),
-        description: faker.commerce.productDescription(),
-        stock: faker.number.int({ min: 1, max: 10 }),
-        price: faker.number.int({ min: 100, max: 999 }),
-        isDisabled: true,
-        category: {
-          connect: {
-            slug: categoryNameSlug,
-          },
-        },
-      },
-    });
-
     pactum.stash.addDataMap({
       existingEmail: credentials.client.email,
       existingPassword: credentials.client.password,
       existingManagerEmail: credentials.manager.email,
       existingManagerPassword: credentials.manager.password,
-      inStockObject: inStockObject,
-      deletedObject: deletedObject,
-      disabledObject: disabledObject,
-    });
-
-    await pactum.spec().post('/auth/register').withJson({
-      email: '$M{existingEmail}',
-      password: '$M{existingPassword}',
-    });
-
-    await pactum.spec().post('/auth/register').withJson({
-      email: '$M{existingManagerEmail}',
-      password: '$M{existingManagerPassword}',
-    });
-
-    await prisma.user.update({
-      where: {
-        email: credentials.manager.email.toLowerCase(),
-      },
-      data: {
-        role: Role.Manager,
-      },
+      inStockObject: 1,
+      deletedObject: 2,
+      disabledObject: 3,
     });
   });
 
@@ -128,11 +63,13 @@ describe('ProductController (e2e)', () => {
   describe('ProductController', () => {
     describe('List products', () => {
       it("doesn't return deleted or disabled products", async () => {
-        await pactum
+        const r = await pactum
           .spec()
           .get('/products')
           .expectStatus(200)
-          .expectJsonLength(1);
+          .expectJsonLength(1)
+          .toss();
+        console.log(r);
       });
     });
     describe('Get product details', () => {

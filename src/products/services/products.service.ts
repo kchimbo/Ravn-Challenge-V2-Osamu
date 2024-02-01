@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prima.service';
 import { Prisma } from '@prisma/client';
 import { ProductAlreadyLiked } from '../exceptions/product-already-liked';
@@ -7,26 +7,47 @@ import { PrismaError } from '../../prisma/prisma.errors';
 import { ProductDetailsDto } from '../dto/product-details.dto';
 import { AwsService } from '../../aws/aws.service';
 import { v4 as uuidv4 } from 'uuid';
-import { forkJoin, map, mergeMap, of, reduce, switchMap } from 'rxjs';
+import { forkJoin, mergeMap, of, reduce, switchMap, tap } from 'rxjs';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { CategoryNotFoundException } from '../exceptions/category-not-found.exception';
 import { DeleteImageDto } from '../dto/delete-image.dto';
+import * as _ from 'lodash';
 
 @Injectable()
 export class ProductsService {
+  private logger = new Logger(ProductsService.name);
   constructor(
     private prisma: PrismaService,
     private aws: AwsService,
   ) {}
 
-  async listProduct(offset: number, limit: number) {
-    return this.prisma.product.findMany({
-      take: limit,
-      skip: offset,
-      where: {
+  async listProduct(limit: number, cursor?: number, where?: object) {
+    if (_.isEmpty(where)) {
+      where = {
         isDisabled: false,
         deletedAt: null,
-      },
+      };
+    } else {
+      where = {
+        ...where,
+        isDisabled: false,
+        deletedAt: null,
+      };
+    }
+    this.logger.log(where, typeof cursor);
+    if (cursor != undefined && cursor > 0) {
+      return this.prisma.product.findMany({
+        take: limit,
+        skip: 1,
+        cursor: {
+          id: cursor,
+        },
+        where,
+      });
+    }
+    return this.prisma.product.findMany({
+      take: limit,
+      where,
     });
   }
 
@@ -120,10 +141,8 @@ export class ProductsService {
   }
 
   addImagesToProduct(productId: number, files: Array<Express.Multer.File>) {
-    console.log('Adding new images to product');
-    console.log(files);
     return of(...files).pipe(
-      mergeMap((file) => this.uploadFile(file)),
+      mergeMap(async (file) => await this.uploadFile(file)),
       reduce(
         (acc, i) => [
           ...acc,
@@ -131,12 +150,10 @@ export class ProductsService {
         ],
         [],
       ),
-      map(async (data) => {
-        const result = await this.prisma.image.createMany({
+      switchMap(async (data) => {
+        return this.prisma.image.createMany({
           data,
         });
-        console.log(result);
-        return result;
       }),
     );
   }
@@ -210,9 +227,9 @@ export class ProductsService {
   }
 
   private async uploadFile(file: Express.Multer.File) {
-    console.log('Uploading file');
     const extension = file.originalname.split('.').slice(-1);
     const filename = `${uuidv4()}.${extension}`;
+    console.log(`Uploading file ${file.filename} as ${filename} to S3`);
     return await this.aws.uploadFile(file.buffer, filename);
   }
 
