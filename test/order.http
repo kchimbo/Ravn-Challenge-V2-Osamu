@@ -32,5 +32,5 @@ GET {{host}}/orders
 Authorization: Bearer {{accessToken}}
 
 ### Get all orders of the specified user
-GET {{host}}/orders/3
+GET {{host}}/orders/1
 Authorization: Bearer {{accessToken}}

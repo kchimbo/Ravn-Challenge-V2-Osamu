@@ -50,7 +50,7 @@ export class CartsService {
     return { ...cart, totalPrice };
   }
 
-  async getOrCreateCart(userId: number) {
+  private async getOrCreateCart(userId: number) {
     console.log('Cart');
     const { id } = await this.prismaService.cart.upsert({
       where: {

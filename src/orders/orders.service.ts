@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prima.service';
 
 @Injectable()
@@ -25,7 +25,7 @@ export class OrdersService {
   }
 
   async getOrderForUser(userId: number) {
-    return this.prismaService.order.findMany({
+    const orders = await this.prismaService.order.findMany({
       where: {
         userId,
       },
@@ -33,5 +33,11 @@ export class OrdersService {
         orderItem: true,
       },
     });
+    if (!orders.length) {
+      return {
+        data: [],
+      };
+    }
+    return orders;
   }
 }
