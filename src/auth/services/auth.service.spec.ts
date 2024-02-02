@@ -4,11 +4,15 @@ import { UsersService } from '../../users/services/users.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prima.service';
+import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
+import { PrismaClient } from '@prisma/client';
 
 describe('AuthService', () => {
   let service: AuthService;
   let userService: UsersService;
   let jwtService: JwtService;
+  let prismaService: DeepMockProxy<PrismaService>;
 
   const databaseCredentials = {
     email: 'user@example.com',
@@ -18,6 +22,7 @@ describe('AuthService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        PrismaService,
         AuthService,
         {
           provide: UsersService,
@@ -30,6 +35,7 @@ describe('AuthService', () => {
           provide: JwtService,
           useValue: {
             signAsync: jest.fn(),
+            decode: jest.fn(),
           },
         },
         {
@@ -39,9 +45,13 @@ describe('AuthService', () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideProvider(PrismaService)
+      .useValue(mockDeep<PrismaClient>())
+      .compile();
 
     service = module.get<AuthService>(AuthService);
+    prismaService = module.get(PrismaService);
     userService = module.get<UsersService>(UsersService);
     jwtService = module.get<JwtService>(JwtService);
   });
@@ -66,12 +76,17 @@ describe('AuthService', () => {
   it('login() should return the access and refresh token if the credentials are valid', async () => {
     jest.spyOn(userService, 'findOne').mockResolvedValue(databaseCredentials);
     jest.spyOn(jwtService, 'signAsync').mockResolvedValue('token');
+    jest
+      .spyOn(jwtService, 'decode')
+      .mockReturnValue({ sub: 1, jti: '1', exp: new Date() });
+
     await expect(
       service.login(databaseCredentials.email, 'secret_password'),
     ).resolves.toEqual({
       accessToken: expect.any(String),
       refreshToken: expect.any(String),
     });
+    expect(prismaService.outstandingToken.create).toHaveBeenCalled();
   });
 
   it('register() should call the userService', async () => {

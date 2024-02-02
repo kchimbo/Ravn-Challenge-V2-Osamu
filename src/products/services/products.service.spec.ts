@@ -271,8 +271,8 @@ describe('ProductsService', () => {
   /**
    * Like product
    */
-  it('likeProduct should add a like if the product exists and is not currently liked', () => {
-    service.likeProduct(200, 100);
+  it('likeProduct should add a like if the product exists and is not currently liked', async () => {
+    await service.likeProduct(200, 100);
     expect(prismaService.likesOnProduct.create).toHaveBeenCalledWith({
       data: {
         product: {
