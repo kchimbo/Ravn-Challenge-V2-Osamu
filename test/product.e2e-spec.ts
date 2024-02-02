@@ -6,18 +6,15 @@ import { PrismaClientExceptionFilter } from '../src/prisma/prisma-client-excepti
 import { HttpAdapterHost } from '@nestjs/core';
 import { PrismaService } from '../src/prisma/prima.service';
 import { faker } from '@faker-js/faker';
-import { like } from 'pactum-matchers';
-import { Role } from '../src/auth/types/roles.enum';
-import { createSampleData } from '../src/main';
 
 const credentials = {
   client: {
-    email: faker.internet.email(),
-    password: faker.internet.password(),
+    email: 'client@example.com',
+    password: 'secret_password',
   },
   manager: {
-    email: faker.internet.email(),
-    password: faker.internet.password(),
+    email: 'manager@example.com',
+    password: 'secret_password',
   },
 };
 
@@ -38,22 +35,13 @@ describe('ProductController (e2e)', () => {
 
     prisma = app.get(PrismaService);
     await prisma.cleanDb();
-    await createSampleData(prisma);
+    await prisma.seedUsers();
+    await prisma.seedProducts();
 
     await app.init();
     await app.listen(3000);
 
     pactum.request.setBaseUrl('http://localhost:3000');
-
-    pactum.stash.addDataMap({
-      existingEmail: credentials.client.email,
-      existingPassword: credentials.client.password,
-      existingManagerEmail: credentials.manager.email,
-      existingManagerPassword: credentials.manager.password,
-      inStockObject: 1,
-      deletedObject: 2,
-      disabledObject: 3,
-    });
   });
 
   afterAll(() => {
@@ -63,74 +51,78 @@ describe('ProductController (e2e)', () => {
   describe('ProductController', () => {
     describe('List products', () => {
       it("doesn't return deleted or disabled products", async () => {
-        const r = await pactum
+        return pactum
           .spec()
           .get('/products')
           .expectStatus(200)
-          .expectJsonLength(1)
-          .toss();
-        console.log(r);
+          .expectJsonLength(5);
       });
     });
     describe('Get product details', () => {
       it('returns an active product', async () => {
-        await pactum
-          .spec()
-          .get(`/products/$M{inStockObject.id}`)
-          .expectStatus(200);
+        await pactum.spec().get(`/products/1`).expectStatus(200);
       });
       it('throws an error when the product was deleted', async () => {
-        await pactum
-          .spec()
-          .get(`/products/$M{deletedObject.id}`)
-          .expectStatus(404);
+        await pactum.spec().get(`/products/8`).expectStatus(404);
       });
       it('throws an error when the product was disabled', async () => {
-        await pactum
-          .spec()
-          .get(`/products/$M{disabledObject.id}`)
-          .expectStatus(404);
+        await pactum.spec().get(`/products/7`).expectStatus(404);
       });
     });
     describe('Like product', () => {
       it('throws an error when the user liking the product is a guest', async () => {
-        await pactum
-          .spec()
-          .post(`/products/$M{inStockObject.id}/like`)
-          .expectStatus(401);
+        await pactum.spec().post(`/products/1/like`).expectStatus(401);
       });
 
       it('succeeds when liking a new product for the first time', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
-          email: '$M{existingEmail}',
-          password: `$M{existingPassword}`,
+          email: credentials.client.email,
+          password: credentials.client.password,
         });
 
         await pactum
           .spec()
-          .post(`/products/$M{inStockObject.id}/like`)
+          .post(`/products/1/like`)
           .withBearerToken(response.json.accessToken)
           .expectStatus(201);
       });
-      it('throws an error when the product liked was deleted', () => {
-        // TODO: implement
-      });
-      it('throws an error when the product liked was disabled', () => {
-        // TODO: implement
-      });
-      it('throws an error when the product was already liked', async () => {
+      it('throws an error when the product liked was deleted', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
-          email: '$M{existingEmail}',
-          password: `$M{existingPassword}`,
+          email: credentials.client.email,
+          password: credentials.client.password,
         });
 
         await pactum
           .spec()
-          .post(`/products/$M{inStockObject.id}/like`)
+          .post(`/products/8/like`)
+          .withBearerToken(response.json.accessToken)
+          .expectStatus(404);
+      });
+      it('throws an error when the product liked was disabled', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.client.email,
+          password: credentials.client.password,
+        });
+
+        await pactum
+          .spec()
+          .post(`/products/7/like`)
+          .withBearerToken(response.json.accessToken)
+          .expectStatus(404);
+      });
+      it('throws an error when the product was already liked', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.client.email,
+          password: credentials.client.password,
+        });
+
+        await pactum
+          .spec()
+          .post(`/products/1/like`)
           .withBearerToken(response.json.accessToken)
           .expectStatus(400)
           .expectJsonMatch({
-            message: `Product ID:$M{inStockObject.id} was already liked by the user`,
+            message: `Product ID:1 was already liked by the user`,
           });
       });
     });
@@ -143,8 +135,8 @@ describe('ProductController (e2e)', () => {
       });
       it('throws an error when the user is a client', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
-          email: '$M{existingEmail}',
-          password: `$M{existingPassword}`,
+          email: credentials.client.email,
+          password: credentials.client.password,
         });
 
         await pactum

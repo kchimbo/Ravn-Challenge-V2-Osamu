@@ -45,7 +45,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
   async seedUsers() {
     const hashedPassword = await bcrypt.hash('secret_password', 12);
-    console.log(hashedPassword);
     return this.user.createMany({
       data: [
         {
@@ -58,6 +57,117 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
           role: Role.MANAGER,
         },
       ],
+    });
+  }
+
+  async seedProducts() {
+    await this.$queryRaw`ALTER SEQUENCE "Product_id_seq" RESTART WITH 1`;
+    await this.product.create({
+      data: {
+        name: 'active_product_1',
+        price: 99 /* $0.99 */,
+        stock: 3,
+        category: {
+          create: {
+            name: 'Sample Category 1',
+            slug: 'sample-category-1',
+          },
+        },
+      },
+    });
+
+    await this.product.create({
+      data: {
+        name: 'active_product_2',
+        price: 99 /* $0.99 */,
+        stock: 5,
+        category: {
+          connect: {
+            slug: 'sample-category-1',
+          },
+        },
+      },
+    });
+
+    await this.product.create({
+      data: {
+        name: 'active_product_3',
+        price: 99 /* $0.99 */,
+        stock: 1,
+        category: {
+          connect: {
+            slug: 'sample-category-1',
+          },
+        },
+      },
+    });
+
+    await this.product.create({
+      data: {
+        name: 'active_product_4',
+        price: 99 /* $0.99 */,
+        stock: 1,
+        category: {
+          connect: {
+            slug: 'sample-category-1',
+          },
+        },
+      },
+    });
+
+    await this.product.create({
+      data: {
+        name: 'active_product_5',
+        price: 99 /* $0.99 */,
+        stock: 1,
+        category: {
+          connect: {
+            slug: 'sample-category-1',
+          },
+        },
+      },
+    });
+
+    await this.product.create({
+      data: {
+        name: 'active_product_6',
+        price: 99 /* $0.99 */,
+        stock: 1,
+        category: {
+          create: {
+            name: 'Sample Category 2',
+            slug: 'sample-category-2',
+          },
+        },
+      },
+    });
+
+    await this.product.create({
+      data: {
+        name: 'disabled_product_1',
+        price: 99 /* $0.99 */,
+        stock: 3,
+        isDisabled: true,
+        category: {
+          connect: {
+            slug: 'sample-category-1',
+          },
+        },
+      },
+    });
+
+    await this.product.create({
+      data: {
+        name: 'deleted_product_1',
+        price: 99 /* $0.99 */,
+        stock: 0,
+        deletedAt: new Date(),
+        category: {
+          connect: {
+            slug: 'sample-category-1',
+          },
+        },
+      },
     });
   }
 

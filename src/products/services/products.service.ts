@@ -213,6 +213,7 @@ export class ProductsService {
   }
 
   async likeProduct(userId: number, productId: number) {
+    await this.getProductDetails(productId);
     try {
       await this.prisma.likesOnProduct.create({
         data: {
