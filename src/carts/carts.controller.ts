@@ -56,10 +56,9 @@ export class CartsController {
   }
 
   @ApiOperation({
-    summary: 'Get the cart of the current user',
+    summary: 'Delete the cart of the current user',
   })
   @ApiBearerAuth('access_token')
-  @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard)
   @Delete('/')
   async deleteCart(@GetCurrentUserId() userId: number) {

@@ -47,6 +47,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
   async seedUsers() {
     const hashedPassword = await bcrypt.hash('secret_password', 12);
+    await this.$queryRaw`ALTER SEQUENCE "User_id_seq" RESTART WITH 1`;
     return this.user.createMany({
       data: [
         {
@@ -59,6 +60,25 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
           role: Role.MANAGER,
         },
       ],
+    });
+  }
+
+  /**
+   * Seed the client cart <client@example.com> with a single product
+   */
+  async seedCart() {
+    await this.cart.create({
+      data: {
+        userId: 1,
+        cartItem: {
+          create: [
+            {
+              productId: 1,
+              quantity: 1,
+            },
+          ],
+        },
+      },
     });
   }
 

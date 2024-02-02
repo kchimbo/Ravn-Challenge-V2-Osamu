@@ -17,6 +17,7 @@ async function bootstrap() {
       await prisma.cleanDb();
       await prisma.seedUsers();
       await prisma.seedProducts();
+      await prisma.seedCart();
 
       return nestApplication;
     },

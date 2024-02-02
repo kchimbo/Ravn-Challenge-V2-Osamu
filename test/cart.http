@@ -7,6 +7,11 @@ Content-Type: application/json
   "password": "{{clientPassword}}"
 }
 
+> {%
+  client.global.set("accessToken", response.body['accessToken']);
+  client.global.set("refreshToken", response.body['refreshToken'])
+%}
+
 ### Login as a manager
 POST {{host}}/auth/login
 Content-Type: application/json

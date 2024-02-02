@@ -56,6 +56,9 @@ export class CartsService {
       })
       .reduce((acc, current) => acc + current, 0);
 
+    console.log('--> CART');
+    console.log(cart);
+
     return { ...cart, totalPrice };
   }
 

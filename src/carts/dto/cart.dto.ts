@@ -40,7 +40,7 @@ class CartItemDto {
   stock: number;
 
   @Expose()
-  @Transform(({ obj }) => obj.product.stock)
+  @Transform(({ obj }) => obj.product.price)
   price: number;
 
   @Expose()
