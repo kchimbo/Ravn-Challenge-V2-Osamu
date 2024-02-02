@@ -1,16 +1,22 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from '../../users/services/users.service';
 import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
+import { JsonWebTokenError, JwtService } from '@nestjs/jwt';
 import { v4 as uuidv4 } from 'uuid';
 import { ConfigService } from '@nestjs/config';
-
+import { PrismaService } from '../../prisma/prima.service';
+import * as _ from 'lodash';
 @Injectable()
 export class AuthService {
   constructor(
     private configService: ConfigService,
     private jwtService: JwtService,
     private usersService: UsersService,
+    private prismaService: PrismaService,
   ) {}
 
   async login(email: string, password: string) {
@@ -49,6 +55,71 @@ export class AuthService {
     return null;
   }
 
+  async logout(userId: number) {
+    const outstandingTokens =
+      await this.prismaService.outstandingToken.updateMany({
+        where: {
+          userId: userId,
+        },
+        data: {
+          isDenylisted: true,
+        },
+      });
+    console.log(
+      `Denylisted ${outstandingTokens.count} tokens for user ${userId}`,
+    );
+    return null;
+  }
+
+  async refreshToken(refreshToken: string) {
+    try {
+      const { sub, jti } = await this.jwtService.verifyAsync(refreshToken, {
+        secret: this.configService.get<string>('auth.refreshTokenSecret'),
+      });
+      const isActiveToken: any =
+        await this.prismaService.outstandingToken.findMany({
+          where: {
+            token: jti,
+            isDenylisted: false,
+          },
+          include: {
+            user: {
+              select: {
+                role: true,
+              },
+            },
+          },
+        });
+      if (isActiveToken.length > 0) {
+        console.log(sub, jti);
+        const newToken = this.jwtService.signAsync(
+          {
+            sub: sub,
+            jti: uuidv4(),
+            role: isActiveToken.user.role,
+          },
+          {
+            secret: this.configService.get<string>('auth.accessTokenSecret'),
+            expiresIn: '150min',
+          },
+        );
+        return { accessTone: newToken };
+      } else {
+        throw new UnauthorizedException(
+          'The supplied token is valid but has been marked as denylisted',
+        );
+      }
+    } catch (err) {
+      if (err instanceof JsonWebTokenError) {
+        throw new BadRequestException(
+          'The supplied refresh token is not valid',
+        );
+      }
+      throw err;
+    }
+    return null;
+  }
+
   private async getJwtTokens(userId: number, userRole: string) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
@@ -68,11 +139,22 @@ export class AuthService {
           jti: uuidv4(),
         },
         {
-          secret: this.configService.get<string>('auth.accessTokenSecret'),
+          secret: this.configService.get<string>('auth.refreshTokenSecret'),
           expiresIn: '7d',
         },
       ),
     ]);
+
+    const { sub, jti, exp } = this.jwtService.decode(refreshToken);
+
+    await this.prismaService.outstandingToken.create({
+      data: {
+        userId: sub,
+        token: jti,
+        expiresAt: new Date(exp * 1000),
+      },
+    });
+
     return {
       accessToken,
       refreshToken,

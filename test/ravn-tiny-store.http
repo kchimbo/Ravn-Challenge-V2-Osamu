@@ -34,6 +34,18 @@ Content-Type: application/json
 GET {{host}}/auth/me
 Authorization: Bearer {{accessToken}}
 
+### Logout
+POST {{host}}/auth/logout
+Authorization: Bearer {{accessToken}}
+
+### Refresh Token
+POST {{host}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
 ### Add a single image to product
 POST {{host}}/products/1/images
 Content-Type: multipart/form-data; boundary=boundary

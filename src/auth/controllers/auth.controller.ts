@@ -23,6 +23,7 @@ import { TransformDataInterceptor } from '../../utils/transform-data.interceptor
 import { RoleGuard } from '../guards/role.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { Role } from '../types/roles.enum';
+import { RefreshTokenDto } from '../dto/refresh-token.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -48,6 +49,18 @@ export class AuthController {
   @HttpCode(200)
   async login(@ValidBody() { email, password }: AuthDto) {
     return this.authService.login(email, password);
+  }
+
+  @Post('/logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  async logout(@GetCurrentUserId() userId: number) {
+    return this.authService.logout(userId);
+  }
+
+  @Post('/refresh')
+  async refreshToken(@ValidBody() { refreshToken }: RefreshTokenDto) {
+    return this.authService.refreshToken(refreshToken);
   }
 
   @ApiOperation({
