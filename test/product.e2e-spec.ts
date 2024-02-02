@@ -6,6 +6,9 @@ import { PrismaClientExceptionFilter } from '../src/prisma/prisma-client-excepti
 import { HttpAdapterHost } from '@nestjs/core';
 import { PrismaService } from '../src/prisma/prima.service';
 import { faker } from '@faker-js/faker';
+const FormData = require('form-data-lite');
+const path = require('path');
+import * as fs from 'fs';
 
 const credentials = {
   client: {
@@ -128,10 +131,7 @@ describe('ProductController (e2e)', () => {
     });
     describe('Delete product', () => {
       it('throws an error when the user is a guest', async () => {
-        await pactum
-          .spec()
-          .delete(`/products/$M{inStockObject.id}`)
-          .expectStatus(401);
+        await pactum.spec().delete(`/products/1`).expectStatus(401);
       });
       it('throws an error when the user is a client', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
@@ -141,12 +141,190 @@ describe('ProductController (e2e)', () => {
 
         await pactum
           .spec()
-          .delete(`/products/$M{inStockObject.id}`)
+          .delete(`/products/1`)
           .withBearerToken(response.json.accessToken)
           .expectStatus(403);
       });
       it('succeeds when the product is active', async () => {
-        // TODO: implement
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+
+        await pactum
+          .spec()
+          .delete('/products/5')
+          .withBearerToken(response.json.accessToken)
+          .expectStatus(200);
+      });
+    });
+
+    describe('Update product details', () => {
+      it('throws an error if a user tries to update a product', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.client.email,
+          password: credentials.client.password,
+        });
+
+        await pactum
+          .spec()
+          .put(`/products/1`)
+          .withBearerToken(response.json.accessToken)
+          .expectStatus(403);
+      });
+      it('can update the name of the product', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+
+        await pactum
+          .spec()
+          .put(`/products/1`)
+          .withBearerToken(response.json.accessToken)
+          .withJson({
+            name: 'new name for the product',
+          })
+          .expectStatus(200)
+          .expectJsonMatch({
+            name: 'new name for the product',
+          });
+      });
+      it('can update the description of the product', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+
+        await pactum
+          .spec()
+          .put(`/products/1`)
+          .withBearerToken(response.json.accessToken)
+          .withJson({
+            name: 'new description for the product',
+          })
+          .expectStatus(200)
+          .expectJsonMatch({
+            name: 'new description for the product',
+          });
+      });
+      it('can update the price of the product', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+
+        await pactum
+          .spec()
+          .put(`/products/1`)
+          .withBearerToken(response.json.accessToken)
+          .withJson({
+            price: 999,
+          })
+          .expectStatus(200)
+          .expectJsonMatch({
+            price: 999,
+          });
+      });
+      it('can update the stock of the product', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+
+        await pactum
+          .spec()
+          .put(`/products/1`)
+          .withBearerToken(response.json.accessToken)
+          .withJson({
+            stock: 10,
+          })
+          .expectStatus(200)
+          .expectJsonMatch({
+            stock: 10,
+          });
+      });
+      it('can update the status of the product', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+
+        await pactum
+          .spec()
+          .put(`/products/1`)
+          .withBearerToken(response.json.accessToken)
+          .withJson({
+            isDisabled: true,
+          })
+          .expectStatus(200)
+          .expectJsonMatch({
+            isDisabled: true,
+          });
+      });
+    });
+    describe('Add Image', () => {
+      it('add a single image to a product', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+
+        const form = new FormData();
+        form.append(
+          'files',
+          fs.readFileSync(path.resolve(__dirname, './input.txt')),
+          {
+            filename: 'a.txt',
+          },
+        );
+
+        await pactum
+          .spec()
+          .post(`/products/1/images`)
+          .withBearerToken(response.json.accessToken)
+          .withMultiPartFormData(form)
+          .expectStatus(201);
+      });
+
+      it('add multiple images to a product', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+
+        const form = new FormData();
+        form.append(
+          'files',
+          fs.readFileSync(path.resolve(__dirname, './input1.txt')),
+          {
+            filename: 'input1.txt',
+          },
+        );
+        form.append(
+          'files',
+          fs.readFileSync(path.resolve(__dirname, './input2.txt')),
+          {
+            filename: 'input2.txt',
+          },
+        );
+
+        await pactum
+          .spec()
+          .post(`/products/2/images`)
+          .withBearerToken(response.json.accessToken)
+          .withMultiPartFormData(form)
+          .expectStatus(201);
+      });
+    });
+    describe('Remove Image', () => {
+      it('deletes an image from a product', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+
+        // TODO: finish
       });
     });
   });

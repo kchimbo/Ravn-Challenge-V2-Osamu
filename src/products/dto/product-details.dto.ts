@@ -10,11 +10,11 @@ export class ProductDetailsDto {
   name: string;
 
   @IsOptional()
-  @IsString()
+  @IsNumber()
   price: number;
 
   @IsOptional()
-  @IsString()
+  @IsNumber()
   stock: number;
 
   @Exclude()
@@ -26,6 +26,7 @@ export class ProductDetailsDto {
   @Exclude()
   deletedAt: Date;
 
-  @Exclude()
+  @IsOptional()
+  @Exclude({ toPlainOnly: true })
   isDisabled: boolean;
 }

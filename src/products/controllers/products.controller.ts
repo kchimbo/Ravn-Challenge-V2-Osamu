@@ -151,7 +151,7 @@ export class ProductsController {
   @UseGuards(JwtAuthGuard, RoleGuard)
   async updateProduct(
     @Param('id', ParseIntPipe) productId: number,
-    details: ProductDetailsDto,
+    @ValidBody() details: ProductDetailsDto,
   ) {
     return this.productsService.updateProduct(productId, details);
   }

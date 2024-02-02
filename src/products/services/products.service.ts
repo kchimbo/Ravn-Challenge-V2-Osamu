@@ -136,6 +136,8 @@ export class ProductsService {
   }
 
   async updateProduct(productId: number, details: ProductDetailsDto) {
+    console.log('Updating product...');
+    console.log(details);
     try {
       return await this.prisma.product.update({
         where: {
@@ -201,6 +203,7 @@ export class ProductsService {
   }
 
   async deleteProduct(productId: number) {
+    console.log('Deleting product....');
     try {
       return await this.prisma.product.delete({
         where: {
