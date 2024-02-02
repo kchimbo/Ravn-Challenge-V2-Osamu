@@ -53,6 +53,28 @@ export class ProductsController {
     return this.productsService.listProduct(limit, cursor);
   }
 
+  @ApiOperation({
+    summary: 'Search products by category',
+  })
+  @Get('/search')
+  @ApiQuery({
+    name: 'q',
+    type: 'string',
+    description: 'The name of the product',
+  })
+  @ApiQuery({
+    name: 'category',
+    type: 'number',
+    description: 'The category of the product',
+  })
+  async searchProducts(
+    @Query('q') productName: string,
+    @Query('category', ParseIntPipe) category?: number,
+  ) {
+    console.log('Received ' + productName);
+    return this.productsService.getProductsByCategory(productName, category);
+  }
+
   @Get('/:id')
   @ApiOperation({
     summary: 'Get product details',
@@ -65,27 +87,6 @@ export class ProductsController {
   @UseInterceptors(new TransformDataInterceptor(ProductDetailsDto))
   async getProductDetails(@Param('id', ParseIntPipe) productId: number) {
     return this.productsService.getProductDetails(productId);
-  }
-
-  @ApiOperation({
-    summary: 'Search products by category',
-  })
-  @Get('/search')
-  @ApiQuery({
-    name: 'q',
-    type: 'string',
-    description: 'The name of the product',
-  })
-  @ApiQuery({
-    name: 'category',
-    type: 'string',
-    description: 'The category of the product',
-  })
-  async searchProducts(
-    @Query('q') productName: string,
-    @Query('category') category?: string,
-  ) {
-    return this.productsService.getProductsByCategory(productName, category);
   }
 
   @ApiOperation({

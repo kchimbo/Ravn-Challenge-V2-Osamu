@@ -21,7 +21,9 @@ Content-Type: application/json
   client.global.set("refreshToken", response.body['refreshToken'])
 %}
 
-### Get current cart
+### List all products
 GET {{host}}/products?limit=2&cursor=220
 Authorization: Bearer {{accessToken}}
 
+### Search products by category
+GET {{host}}/products/search?q=product&category=205

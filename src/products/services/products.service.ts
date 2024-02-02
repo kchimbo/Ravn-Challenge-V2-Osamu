@@ -73,14 +73,17 @@ export class ProductsService {
     }
   }
 
-  async getProductsByCategory(productName: string, category?: string) {
+  async getProductsByCategory(productName: string, category?: number) {
     return this.prisma.product.findMany({
       where: {
-        name: productName,
+        name: {
+          contains: productName,
+          mode: 'insensitive',
+        },
         isDisabled: false,
         deletedAt: null,
         category: {
-          slug: category,
+          id: category,
         },
       },
     });
