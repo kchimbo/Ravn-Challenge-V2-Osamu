@@ -1,47 +1,54 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
+  LoggerService,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prima.service';
 
 @Injectable()
 export class OrdersService {
+  private logger: LoggerService = new Logger(OrdersService.name);
   constructor(private readonly prismaService: PrismaService) {}
 
   async createOrder(userId: number, cart: any) {
-    console.log('Creating the order for cart...');
-    console.log(cart);
-    // Check if we have enough stock of each cartItem
-    const orderItems = cart.cartItem.map(
-      ({ productId, quantity, product: { price } }) => {
-        return { userId, productId, quantity, price };
-      },
-    );
-
     await this.prismaService.$transaction(async (tx) => {
       const items = cart.cartItem.map(
         ({ productId, product: { price }, quantity }) => {
           return { userId, productId, price, quantity };
         },
       );
-      // Find the current stock for the items in the cart
+      // Find the current stock for the items in the cart and check that all the products in the cart are not disabled
+      // or deleted
       const result = await tx.product.findMany({
         where: {
           id: {
             in: items.map(({ productId }) => productId),
           },
+          isDisabled: false,
+          deletedAt: null,
         },
         select: {
           id: true,
           stock: true,
         },
       });
+      if (result.length != items.length) {
+        throw new BadRequestException(
+          'Unable to create order from cart. One or more products are no longer ' +
+            'available',
+        );
+      }
+
       // Check if we have enough stock the items in the cart and get the new quantity to update the product stock
       // after creating the order
       const updatedQuantity = cart.cartItem.map(({ productId, quantity }) => {
         const { stock } = result.find(({ id }) => id === productId) || {};
         if (stock == undefined || stock < quantity) {
+          this.logger
+            .error(`Unable to create order from cart. Not enough stock (required ${quantity}, ${stock} available) for 
+            product ${productId}`);
           throw new BadRequestException(
             `Not enough stock for product ${productId}`,
           );
@@ -56,7 +63,7 @@ export class OrdersService {
           total: cart.totalPrice,
           orderItem: {
             createMany: {
-              data: orderItems,
+              data: items,
             },
           },
         },
@@ -91,6 +98,7 @@ export class OrdersService {
         data: [],
       };
     }
+    this.logger.log(`Found orders for user ${userId}`);
     return orders;
   }
 }
