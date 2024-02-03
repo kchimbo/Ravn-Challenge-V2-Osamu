@@ -3,7 +3,7 @@ import { CartsService } from './carts.service';
 import { PrismaService } from '../prisma/prima.service';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import { PrismaClient } from '@prisma/client';
-import { OrdersService } from '../orders/orders.service';
+import { OrdersService } from '../orders/services/orders.service';
 
 describe('CartsService', () => {
   let service: CartsService;

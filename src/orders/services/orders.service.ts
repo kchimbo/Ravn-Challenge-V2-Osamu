@@ -5,10 +5,9 @@ import {
   LoggerService,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prima.service';
+import { PrismaService } from '../../prisma/prima.service';
 import { Prisma } from '@prisma/client';
-import { PrismaError } from '../prisma/prisma.errors';
-import { ProductNotFoundException } from '../products/exceptions/product-not-found.exception';
+import { PrismaError } from '../../prisma/prisma.errors';
 
 @Injectable()
 export class OrdersService {

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { OrdersService } from './orders.service';
-import { PrismaService } from '../prisma/prima.service';
+import { PrismaService } from '../../prisma/prima.service';
 import { mockDeep } from 'jest-mock-extended';
 import { PrismaClient } from '@prisma/client';
 

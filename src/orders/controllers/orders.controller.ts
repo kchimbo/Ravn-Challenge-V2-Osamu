@@ -14,13 +14,13 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { Role } from '../auth/types/roles.enum';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RoleGuard } from '../auth/guards/role.guard';
-import { OrdersService } from './orders.service';
-import { GetCurrentUserId } from '../auth/decorators/get-current-user-id.decorator';
-import { OrderEntity } from './dto/order.dto';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Role } from '../../auth/types/roles.enum';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RoleGuard } from '../../auth/guards/role.guard';
+import { OrdersService } from '../services/orders.service';
+import { GetCurrentUserId } from '../../auth/decorators/get-current-user-id.decorator';
+import { OrderEntity } from '../dto/order.dto';
 
 @ApiTags('Orders')
 @Controller('orders')
@@ -41,18 +41,20 @@ export class OrdersController {
     description: 'The token is no longer valid or is missing',
   })
   @UseGuards(JwtAuthGuard)
-  async getOrders(@GetCurrentUserId() userId) {
+  async getOrders(@GetCurrentUserId() userId: number) {
     const orders = await this.ordersService.getOrderForUser(userId);
     return orders.map((order) => new OrderEntity(order));
   }
 
   @Get('/:userId')
   @ApiOperation({
-    summary: 'Get all the orders of the given user id',
+    summary: 'Get all the orders for the given user id',
   })
   @ApiBearerAuth('access_token')
   @ApiResponse({
     status: 200,
+    type: OrderEntity,
+    isArray: true,
     description: 'An array containing the orders for the given user id',
   })
   @ApiResponse({

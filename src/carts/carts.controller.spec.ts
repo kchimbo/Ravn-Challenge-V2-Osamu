@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CartsController } from './carts.controller';
-import { OrdersService } from '../orders/orders.service';
+import { OrdersService } from '../orders/services/orders.service';
 import { CartsService } from './carts.service';
 
 describe('CartsController', () => {
