@@ -4,6 +4,8 @@ import {
   ParseIntPipe,
   Param,
   UseGuards,
+  UseInterceptors,
+  ClassSerializerInterceptor,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -18,9 +20,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { OrdersService } from './orders.service';
 import { GetCurrentUserId } from '../auth/decorators/get-current-user-id.decorator';
+import { OrderEntity } from './dto/order.dto';
 
 @ApiTags('Orders')
 @Controller('orders')
+@UseInterceptors(ClassSerializerInterceptor)
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
   @Get('/')
@@ -38,7 +42,8 @@ export class OrdersController {
   })
   @UseGuards(JwtAuthGuard)
   async getOrders(@GetCurrentUserId() userId) {
-    return this.ordersService.getOrderForUser(userId);
+    const orders = await this.ordersService.getOrderForUser(userId);
+    return orders.map((order) => new OrderEntity(order));
   }
 
   @Get('/:userId')
@@ -65,6 +70,7 @@ export class OrdersController {
   @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard, RoleGuard)
   async getOrderId(@Param('userId', ParseIntPipe) id: number) {
-    return this.ordersService.getOrderForUser(id);
+    const orders = await this.ordersService.getOrderForUser(id);
+    return orders.map((order) => new OrderEntity(order));
   }
 }

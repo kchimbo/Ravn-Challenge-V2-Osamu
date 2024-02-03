@@ -6,6 +6,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prima.service';
+import { Prisma } from '@prisma/client';
+import { PrismaError } from '../prisma/prisma.errors';
+import { ProductNotFoundException } from '../products/exceptions/product-not-found.exception';
 
 @Injectable()
 export class OrdersService {
@@ -85,20 +88,38 @@ export class OrdersService {
   }
 
   async getOrderForUser(userId: number) {
+    try {
+      await this.prismaService.user.findFirstOrThrow({
+        where: {
+          id: userId,
+        },
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === PrismaError.ModelDoesNotExist
+      ) {
+        throw new NotFoundException(`${userId} does not exists.`);
+      }
+      throw err;
+    }
     const orders = await this.prismaService.order.findMany({
       where: {
         userId,
       },
       include: {
-        orderItem: true,
+        orderItem: {
+          include: {
+            product: true,
+          },
+        },
       },
     });
-    if (!orders.length) {
-      return {
-        data: [],
-      };
-    }
+
+    console.log(orders);
+
     this.logger.log(`Found orders for user ${userId}`);
+    this.logger.log(orders);
     return orders;
   }
 }

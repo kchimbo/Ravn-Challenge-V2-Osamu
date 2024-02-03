@@ -148,6 +148,23 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     });
   }
 
+  async seedOrder() {
+    await this.order.create({
+      data: {
+        userId: 1,
+        total: 99,
+        orderItem: {
+          create: {
+            userId: 1,
+            productId: 1,
+            price: 99,
+            quantity: 1,
+          },
+        },
+      },
+    });
+  }
+
   /**
    * Seed 8 products: 6 active products (id: 1-6), where 5 are under `sample-category-1` and 1 is under
    * `sample-category-2`, 1 disabled product (id: 7) and 1 deleted product (id: 8)
