@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prima.service';
 import * as _ from 'lodash';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
 @Injectable()
 export class AuthService {
   constructor(
@@ -51,6 +52,26 @@ export class AuthService {
       const { password, ...result } = user;
       const isMatch = await bcrypt.compare(unhashedPassword, password);
       return isMatch ? result : null;
+    }
+    return null;
+  }
+
+  async resetPassword(
+    id: number,
+    { newPassword, currentPassword }: ResetPasswordDto,
+  ) {
+    const user = await this.getUser(id);
+    if (user) {
+      const { password, ...result } = user;
+      const isMatch = await bcrypt.compare(currentPassword, password);
+      if (isMatch) {
+        await this.usersService.updatePassword(id, newPassword);
+        await this.logout(id);
+        return result;
+      }
+      throw new UnauthorizedException(
+        "The supplied password doesn't match the current password",
+      );
     }
     return null;
   }

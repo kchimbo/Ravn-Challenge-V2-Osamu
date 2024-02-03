@@ -16,6 +16,7 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
+  ApiBody,
 } from '@nestjs/swagger';
 import { GetCurrentUserId } from '../decorators/get-current-user-id.decorator';
 import { UserDto } from '../dto/user.dto';
@@ -24,6 +25,7 @@ import { RoleGuard } from '../guards/role.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { Role } from '../types/roles.enum';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -61,6 +63,22 @@ export class AuthController {
   @Post('/refresh')
   async refreshToken(@ValidBody() { refreshToken }: RefreshTokenDto) {
     return this.authService.refreshToken(refreshToken);
+  }
+
+  @ApiBearerAuth('access_token')
+  @ApiOperation({
+    summary: 'Reset the password of the current user',
+  })
+  @ApiBody({
+    type: ResetPasswordDto,
+  })
+  @Post('/resetPassword')
+  @UseGuards(JwtAuthGuard)
+  async resetPassword(
+    @GetCurrentUserId() userId: number,
+    @ValidBody() resetPassword: ResetPasswordDto,
+  ) {
+    return this.authService.resetPassword(userId, resetPassword);
   }
 
   @ApiOperation({
