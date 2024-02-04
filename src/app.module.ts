@@ -11,7 +11,7 @@ import { AwsModule } from './aws/aws.module';
 import { OrdersModule } from './orders/orders.module';
 import { CartsModule } from './carts/carts.module';
 import { BullModule } from '@nestjs/bull';
-import { EmailsService } from './emails/emails.service';
+import { EmailsService } from './emails/services/emails.service';
 import { EmailsModule } from './emails/emails.module';
 
 @Module({

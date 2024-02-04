@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prima.service';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
-import { EmailsService } from '../../emails/emails.service';
+import { EmailsService } from '../../emails/services/emails.service';
 import { Prisma } from '@prisma/client';
 import { PrismaError } from '../../prisma/prisma.errors';
 

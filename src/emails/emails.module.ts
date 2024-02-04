@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { MailerModule } from '@nestjs-modules/mailer';
-import { EmailsService } from './emails.service';
-import { EmailsProcessor } from './emailsProcessor';
+import { EmailsService } from './services/emails.service';
+import { EmailsProcessor } from './processors/emails.processor';
 
 @Module({
   imports: [

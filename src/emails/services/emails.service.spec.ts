@@ -1,17 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EmailsService } from './emails.service';
-import { BullModule, getQueueToken } from '@nestjs/bull';
+import { getQueueToken } from '@nestjs/bull';
 
 describe('EmailsService', () => {
-  let service: EmailsService;
   const sample = {
     email: 'client@example.com',
     productName: 'sample-product',
     token: 'reset_password_token',
   };
 
+  let service: EmailsService;
   let module: TestingModule;
-  let mockQueue;
+  let mockQueue: any;
   const createApp = async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -24,17 +24,6 @@ describe('EmailsService', () => {
     }).compile();
   };
   beforeEach(async () => {
-    // const moduleRef = await Test.createTestingModule({
-    //   providers: [
-    //     EmailsService,
-    //     {
-    //       provide: getQueueToken('emails'),
-    //       useValue: {
-    //         add: jest.fn(),
-    //       },
-    //     },
-    //   ],
-    // }).compile();
     mockQueue = {
       add: jest.fn(),
     };
@@ -42,10 +31,6 @@ describe('EmailsService', () => {
 
     service = module.get<EmailsService>(EmailsService);
   });
-
-  // afterAll(async () => {
-  //   await moduleRef.close();
-  // });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
@@ -55,8 +40,8 @@ describe('EmailsService', () => {
     await service.sendPasswordResetEmail(sample.email, sample.token);
 
     expect(mockQueue.add).toHaveBeenCalledWith('resetPassword', {
-      email: sample.email,
-      resetPasswordKey: sample.token,
+      email: 'client@example.com',
+      resetPasswordKey: 'reset_password_token',
     });
   });
 
@@ -64,7 +49,7 @@ describe('EmailsService', () => {
     await service.sendChangedPasswordEmail(sample.email);
 
     expect(mockQueue.add).toHaveBeenCalledWith('changedPassword', {
-      email: sample.email,
+      email: 'client@example.com',
     });
   });
 

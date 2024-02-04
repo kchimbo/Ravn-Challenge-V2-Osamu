@@ -4,7 +4,7 @@ import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 import { PrismaService } from '../../prisma/prima.service';
 import { PrismaClient, Role } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
-import { EmailsService } from '../../emails/emails.service';
+import { EmailsService } from '../../emails/services/emails.service';
 
 describe('UsersService', () => {
   let service: UsersService;

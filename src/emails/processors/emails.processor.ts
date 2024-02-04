@@ -8,8 +8,18 @@ export class EmailsProcessor {
   constructor(private readonly mailerService: MailerService) {}
 
   @Process('productInStock')
-  handleProductInStock(job: Job) {
-    console.log('email');
+  async handleProductInStock(job: Job) {
+    const {
+      data: { email, name },
+    } = job;
+
+    await this.mailerService.sendMail({
+      to: email,
+      subject: `${name} is back in stock`,
+      text: `
+        The product ${name} is back in stock.
+      `,
+    });
   }
 
   @Process('resetPassword')
@@ -17,6 +27,7 @@ export class EmailsProcessor {
     const {
       data: { email, resetPasswordKey },
     } = job;
+
     await this.mailerService.sendMail({
       to: email,
       subject: 'Reset your password',
@@ -34,6 +45,7 @@ export class EmailsProcessor {
     const {
       data: { email },
     } = job;
+
     await this.mailerService.sendMail({
       to: email,
       subject: 'Password change notification',
