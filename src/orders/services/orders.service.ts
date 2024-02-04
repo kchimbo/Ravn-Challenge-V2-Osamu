@@ -21,6 +21,7 @@ export class OrdersService {
           return { userId, productId, price, quantity };
         },
       );
+
       // Find the current stock for the items in the cart and check that all the products in the cart are not disabled
       // or deleted
       const result = await tx.product.findMany({
@@ -36,7 +37,7 @@ export class OrdersService {
           stock: true,
         },
       });
-      if (result.length != items.length) {
+      if (result.length < 1 || result.length != items.length) {
         throw new BadRequestException(
           'Unable to create order from cart. One or more products are no longer ' +
             'available',

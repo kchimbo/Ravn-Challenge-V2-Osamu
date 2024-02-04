@@ -5,7 +5,6 @@ import * as pactum from 'pactum';
 import { PrismaClientExceptionFilter } from '../src/prisma/prisma-client-exception.filter';
 import { HttpAdapterHost } from '@nestjs/core';
 import { PrismaService } from '../src/prisma/prima.service';
-import { faker } from '@faker-js/faker';
 const FormData = require('form-data-lite');
 const path = require('path');
 import * as fs from 'fs';
@@ -85,6 +84,22 @@ describe('ProductController (e2e)', () => {
         return pactum
           .spec()
           .get('/products?cursor=6')
+          .expectStatus(200)
+          .expectJsonLength(0);
+      });
+    });
+    describe('Search products', () => {
+      it('should search a product under a category', async () => {
+        return pactum
+          .spec()
+          .get('/products/search?q=product&category=2')
+          .expectStatus(200)
+          .expectJsonLength(1);
+      });
+      it("should return any result if the category doesn't exist", async () => {
+        return pactum
+          .spec()
+          .get('/products/search?q=product&category=999')
           .expectStatus(200)
           .expectJsonLength(0);
       });

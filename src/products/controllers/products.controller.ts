@@ -71,7 +71,6 @@ export class ProductsController {
     @Query('q') productName: string,
     @Query('category', ParseIntPipe) category?: number,
   ) {
-    console.log('Received ' + productName);
     return this.productsService.getProductsByCategory(productName, category);
   }
 

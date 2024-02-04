@@ -21,7 +21,7 @@ const credentials = {
   },
 };
 
-describe('OrderController (e2e)', () => {
+describe('CartController (e2e)', () => {
   let app: INestApplication;
   let prisma;
 
@@ -274,6 +274,109 @@ describe('OrderController (e2e)', () => {
         .expectJsonMatch({
           message: 'Unable to update the cart. 999 does not exists',
         });
+    });
+  });
+
+  describe('POST /cart - Checkout cart', () => {
+    it('throws an error when the user is a guest and visits /cart', async () => {
+      await pactum.spec().post(`/carts`).expectStatus(401);
+    });
+
+    it('throws an error when there is not enough available stock for a product', async () => {
+      const response = await pactum.spec().post('/auth/login').withJson({
+        email: credentials.client.email,
+        password: credentials.client.password,
+      });
+
+      // Add an item to the cart
+      await pactum
+        .spec()
+        .patch(`/carts`)
+        .withBearerToken(response.json.accessToken)
+        .withJson({
+          products: [
+            {
+              productId: 2,
+              quantity: 100,
+            },
+          ],
+        });
+
+      await pactum
+        .spec()
+        .post('/carts')
+        .withBearerToken(response.json.accessToken)
+        .expectStatus(400)
+        .expectJsonMatch({
+          message: `Not enough stock for product 2`,
+        });
+    });
+    it('throws an error when a product is not available', async () => {
+      const response = await pactum.spec().post('/auth/login').withJson({
+        email: credentials.client.email,
+        password: credentials.client.password,
+      });
+
+      // Add an item to the cart
+      await pactum
+        .spec()
+        .patch(`/carts`)
+        .withBearerToken(response.json.accessToken)
+        .withJson({
+          products: [
+            {
+              productId: 7,
+              quantity: 1,
+            },
+          ],
+        });
+
+      const r = await pactum
+        .spec()
+        .get('/carts')
+        .withBearerToken(response.json.accessToken)
+        .toss();
+
+      await pactum
+        .spec()
+        .post('/carts')
+        .withBearerToken(response.json.accessToken)
+        .expectStatus(400)
+        .expectJsonMatch({
+          message: `Unable to create order from cart. One or more products are no longer available`,
+        });
+    });
+    it('should create a new order based on the content of the cart', async () => {
+      const response = await pactum.spec().post('/auth/login').withJson({
+        email: credentials.client.email,
+        password: credentials.client.password,
+      });
+
+      // Add an item to the cart
+      await pactum
+        .spec()
+        .patch(`/carts`)
+        .withBearerToken(response.json.accessToken)
+        .withJson({
+          products: [
+            {
+              productId: 2,
+              quantity: 1,
+            },
+          ],
+        });
+
+      await pactum
+        .spec()
+        .post('/carts')
+        .withBearerToken(response.json.accessToken)
+        .expectStatus(201);
+
+      await pactum
+        .spec()
+        .get('/carts')
+        .withBearerToken(response.json.accessToken)
+        .expectJsonMatch({});
     });
   });
 });

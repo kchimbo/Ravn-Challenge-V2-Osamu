@@ -88,6 +88,14 @@ describe('CartsService', () => {
   });
 
   it('checking out a cart should call createOrder', async () => {
+    prisma.cart.delete.mockResolvedValueOnce(emptyCart);
+    prisma.cart.upsert.mockResolvedValueOnce({
+      id: 2,
+      userId: 2,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      cartItem: [],
+    } as any);
     prisma.cart.findUniqueOrThrow.mockResolvedValueOnce(dbCart);
 
     await service.checkoutCart(dbCart.userId);

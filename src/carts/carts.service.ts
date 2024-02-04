@@ -14,7 +14,9 @@ export class CartsService {
 
   async checkoutCart(userId: number) {
     const cart = await this.getCart(userId);
-    return this.ordersService.createOrder(userId, cart);
+    await this.ordersService.createOrder(userId, cart);
+
+    await this.deleteCart(userId);
   }
   async deleteCart(userId: number) {
     try {
@@ -117,7 +119,7 @@ export class CartsService {
       throw new BadRequestException('The cart does not include any products');
     }
     for (const { productId, quantity } of products) {
-      if (!quantity) {
+      if (quantity < 1) {
         try {
           await this.prismaService.cartItem.delete({
             where: {

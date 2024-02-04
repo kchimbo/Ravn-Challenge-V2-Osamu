@@ -27,7 +27,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   }
 
   async cleanDb() {
-    return this.$transaction([
+    this.$transaction([
       // Tokens
       this.outstandingToken.deleteMany(),
       this.resetToken.deleteMany(),
@@ -45,6 +45,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       // User
       this.user.deleteMany(),
     ]);
+
+    await this.$queryRaw`ALTER SEQUENCE "Category_id_seq" RESTART WITH 1`;
   }
 
   /**
