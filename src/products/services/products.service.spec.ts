@@ -14,6 +14,7 @@ import { ProductDetailsDto } from '../dto/product-details.dto';
 import { ProductAlreadyLiked } from '../exceptions/product-already-liked';
 import { CategoryNotFoundException } from '../exceptions/category-not-found.exception';
 import { DeleteImageDto } from '../dto/delete-image.dto';
+import { BadRequestException } from '@nestjs/common';
 describe('ProductsService', () => {
   let service: ProductsService;
   let prismaService: DeepMockProxy<PrismaService>;
@@ -185,6 +186,7 @@ describe('ProductsService', () => {
         filename: 'sample-file.png',
         originalname: 'sample-file.png',
         buffer: Buffer.from('image_data'),
+        mimetype: 'image/png',
       } as Express.Multer.File,
     ]);
 
@@ -242,6 +244,28 @@ describe('ProductsService', () => {
         category: 'sample-category-1',
       }),
     ).rejects.toThrow(CategoryNotFoundException);
+  });
+
+  it('createProduct shoudl throw an error if the files are not an image', async () => {
+    await expect(
+      service.createProduct(
+        {
+          name: 'a new product',
+          description: '',
+          price: 99,
+          stock: 1,
+          category: 'sample-category-1',
+        },
+        [
+          {
+            filename: 'sample-file.png',
+            originalname: 'sample-file.png',
+            buffer: Buffer.from('image_data'),
+            mimetype: 'audio/mp3',
+          } as Express.Multer.File,
+        ],
+      ),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('createProduct should be able create a new product without an image', async () => {

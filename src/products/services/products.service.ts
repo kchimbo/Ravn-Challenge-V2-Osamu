@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  FileTypeValidator,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prima.service';
 import { Prisma } from '@prisma/client';
 import { ProductAlreadyLiked } from '../exceptions/product-already-liked';
@@ -108,6 +114,20 @@ export class ProductsService {
     product: CreateProductDto,
     files?: Array<Express.Multer.File>,
   ) {
+    const validator = new FileTypeValidator({
+      fileType: /(jpg|jpeg|png|webp)$/,
+    });
+
+    if (files != undefined && files.length > 0) {
+      for (const file of files) {
+        if (!validator.isValid(file)) {
+          throw new BadRequestException(
+            'The file is not valid. Only images are allowed',
+          );
+        }
+      }
+    }
+
     let categoryId;
     // check if category exists
     try {
@@ -168,6 +188,19 @@ export class ProductsService {
     productId: number,
     files: Array<Express.Multer.File>,
   ) {
+    const validator = new FileTypeValidator({
+      fileType: /(jpg|jpeg|png|webp)$/,
+    });
+
+    if (files != undefined && files.length > 0) {
+      for (const file of files) {
+        if (!validator.isValid(file)) {
+          throw new BadRequestException(
+            'The file is not valid. Only images are allowed',
+          );
+        }
+      }
+    }
     return lastValueFrom(
       of(...files).pipe(
         mergeMap(async (file) => await this.uploadFile(file)),

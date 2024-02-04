@@ -5,6 +5,7 @@ import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import { PrismaClient } from '@prisma/client';
 import { OrdersService } from '../orders/services/orders.service';
 import { BadRequestException } from '@nestjs/common';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 describe('CartsService', () => {
   let service: CartsService;
@@ -158,6 +159,28 @@ describe('CartsService', () => {
 
     expect(prisma.cartItem.delete).toHaveBeenCalled();
     expect(prisma.cartItem.upsert).not.toHaveBeenCalled();
+  });
+
+  it('should throw a error if the item does not exist', async () => {
+    prisma.cart.upsert.mockResolvedValue(emptyCart);
+    prisma.cart.findUniqueOrThrow.mockResolvedValueOnce(dbCart);
+    prisma.cartItem.upsert.mockRejectedValue(
+      new PrismaClientKnownRequestError('prisma error', {
+        code: 'P2003',
+        clientVersion: '1',
+      }),
+    );
+
+    await expect(
+      service.updateItemCart(1, {
+        products: [
+          {
+            productId: 1,
+            quantity: 1,
+          },
+        ],
+      }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('should add/update an item from the cart if the quantity is not zero', async () => {

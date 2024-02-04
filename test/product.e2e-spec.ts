@@ -334,9 +334,9 @@ describe('ProductController (e2e)', () => {
         const form = new FormData();
         form.append(
           'files',
-          fs.readFileSync(path.resolve(__dirname, './input.txt')),
+          fs.readFileSync(path.resolve(__dirname, './input1.png')),
           {
-            filename: 'a.txt',
+            filename: 'input1.png',
           },
         );
 
@@ -357,16 +357,16 @@ describe('ProductController (e2e)', () => {
         const form = new FormData();
         form.append(
           'files',
-          fs.readFileSync(path.resolve(__dirname, './input1.txt')),
+          fs.readFileSync(path.resolve(__dirname, './input1.png')),
           {
-            filename: 'input1.txt',
+            filename: 'input1.png',
           },
         );
         form.append(
           'files',
-          fs.readFileSync(path.resolve(__dirname, './input2.txt')),
+          fs.readFileSync(path.resolve(__dirname, './input2.png')),
           {
-            filename: 'input2.txt',
+            filename: 'input2.png',
           },
         );
 
@@ -469,9 +469,9 @@ describe('ProductController (e2e)', () => {
         form.append('stock', 100);
         form.append(
           'files',
-          fs.readFileSync(path.resolve(__dirname, './input1.txt')),
+          fs.readFileSync(path.resolve(__dirname, './input1.png')),
           {
-            filename: 'input1.txt',
+            filename: 'input1.png',
           },
         );
 
@@ -503,16 +503,16 @@ describe('ProductController (e2e)', () => {
         form.append('stock', 100);
         form.append(
           'files',
-          fs.readFileSync(path.resolve(__dirname, './input1.txt')),
+          fs.readFileSync(path.resolve(__dirname, './input1.png')),
           {
-            filename: 'input1.txt',
+            filename: 'input1.png',
           },
         );
         form.append(
           'files',
-          fs.readFileSync(path.resolve(__dirname, './input2.txt')),
+          fs.readFileSync(path.resolve(__dirname, './input2.png')),
           {
-            filename: 'input2.txt',
+            filename: 'input2.png',
           },
         );
 

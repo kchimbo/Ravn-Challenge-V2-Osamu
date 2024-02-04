@@ -3,10 +3,11 @@ import { AuthService } from './auth.service';
 import { UsersService } from '../../users/services/users.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prima.service';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -29,12 +30,17 @@ describe('AuthService', () => {
           useValue: {
             findOne: jest.fn(),
             create: jest.fn(),
+            getById: jest.fn(),
+            updatePassword: jest.fn(),
+            createResetKeyForUser: jest.fn(),
+            resetPasswordForUser: jest.fn(),
           },
         },
         {
           provide: JwtService,
           useValue: {
             signAsync: jest.fn(),
+            verifyAsync: jest.fn(),
             decode: jest.fn(),
           },
         },
@@ -87,6 +93,115 @@ describe('AuthService', () => {
       refreshToken: expect.any(String),
     });
     expect(prismaService.outstandingToken.create).toHaveBeenCalled();
+  });
+
+  it('logout should invalid the token', async () => {
+    prismaService.outstandingToken.updateMany.mockResolvedValue({
+      count: 1,
+    } as any);
+
+    await service.logout(1);
+  });
+
+  it('should throw a error if the current password does not match when calling changePassword', async () => {
+    jest.spyOn(userService, 'getById').mockResolvedValue({
+      password: 'current_password',
+      email: 'client@example.com',
+    });
+
+    await expect(
+      service.changePassword(1, {
+        newPassword: 'new_password',
+        currentPassword: 'current_password',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should change the password if the current password matches when calling changePassword', async () => {
+    prismaService.outstandingToken.updateMany.mockResolvedValue({
+      count: 1,
+    } as any);
+    const password = await bcrypt.hash('current_password', 12);
+    jest.spyOn(userService, 'getById').mockResolvedValue({
+      password: password,
+      email: 'client@example.com',
+    });
+
+    await service.changePassword(1, {
+      newPassword: 'new_password',
+      currentPassword: 'current_password',
+    });
+
+    expect(userService.updatePassword).toHaveBeenCalled();
+  });
+
+  it('should throw an error if email is missing when calling resetPassword', async () => {
+    await expect(service.resetPassword({} as any)).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('should call userService when email is supplied to resetPassword', async () => {
+    await service.resetPassword({ email: 'client@example.com' } as any);
+
+    expect(userService.createResetKeyForUser).toHaveBeenCalled();
+  });
+
+  it('should throw an error if email is missing when calling resetPassword', async () => {
+    await expect(service.resetPassword({} as any, 'reset_key')).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('should call userService when email is supplied to resetPassword', async () => {
+    await service.resetPassword(
+      {
+        newPassword: 'new_password',
+      } as any,
+      'reset_key',
+    );
+
+    expect(userService.resetPasswordForUser).toHaveBeenCalled();
+  });
+
+  it('should refresh token', async () => {
+    jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue({
+      sub: 1,
+      jti: 'token-id',
+    });
+
+    jest.spyOn(jwtService, 'signAsync').mockResolvedValue('my_new_token');
+
+    prismaService.outstandingToken.findMany.mockResolvedValue([
+      {
+        id: 1,
+        userId: 1,
+        token: 'token',
+        createdAt: new Date(),
+        expiresAt: new Date(),
+        isDenylisted: false,
+        user: {
+          role: 'client',
+        },
+      } as any,
+    ]);
+
+    await service.refreshToken('refresh_token');
+  });
+
+  it('should throw an error if refresh token is denylisted', async () => {
+    jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue({
+      sub: 1,
+      jti: 'token-id',
+    });
+
+    jest.spyOn(jwtService, 'signAsync').mockResolvedValue('my_new_token');
+
+    prismaService.outstandingToken.findMany.mockResolvedValue([]);
+
+    await expect(service.refreshToken('refresh_token')).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('register() should call the userService', async () => {

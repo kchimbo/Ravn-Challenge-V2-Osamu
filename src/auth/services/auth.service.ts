@@ -146,7 +146,7 @@ export class AuthService {
             expiresIn: '150min',
           },
         );
-        return { accessTone: newToken };
+        return { accessToken: newToken };
       } else {
         throw new BadRequestException(
           'The supplied token is valid but has been marked as denylisted',

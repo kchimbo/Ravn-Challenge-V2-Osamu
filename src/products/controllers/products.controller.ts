@@ -3,6 +3,7 @@ import {
   ClassSerializerInterceptor,
   Controller,
   Delete,
+  FileTypeValidator,
   Get,
   Param,
   ParseIntPipe,
