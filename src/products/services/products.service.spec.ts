@@ -60,6 +60,10 @@ describe('ProductsService', () => {
         deletedAt: null,
         isDisabled: false,
       },
+      include: {
+        Image: true,
+        category: true,
+      },
     });
   });
 
@@ -75,6 +79,10 @@ describe('ProductsService', () => {
         deletedAt: null,
         isDisabled: false,
       },
+      include: {
+        Image: true,
+        category: true,
+      },
     });
   });
 
@@ -88,6 +96,10 @@ describe('ProductsService', () => {
         id: 1,
         deletedAt: null,
         isDisabled: false,
+      },
+      include: {
+        Image: true,
+        category: true,
       },
     });
   });
@@ -238,7 +250,21 @@ describe('ProductsService', () => {
       name: 'Sample Category 1',
       slug: 'sample-category-1',
     });
-    prismaService.$transaction.mockResolvedValue([{ id: 100 }]);
+
+    const newProduct = {
+      id: 100,
+      name: '',
+      description: '',
+      price: 1,
+      stock: 1,
+      categoryId: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+      isDisabled: false,
+    };
+    prismaService.product.create.mockResolvedValue(newProduct);
+    prismaService.product.findUniqueOrThrow.mockResolvedValueOnce(newProduct);
 
     await expect(
       service.createProduct({
@@ -248,7 +274,7 @@ describe('ProductsService', () => {
         stock: 1,
         category: 'sample-category-1',
       }),
-    ).resolves.toBe(100);
+    ).resolves.toBe(newProduct);
     expect(prismaService.product.create).toHaveBeenCalledWith({
       data: {
         name: 'a new product',

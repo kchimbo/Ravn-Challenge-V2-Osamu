@@ -83,6 +83,7 @@ export class OrdersService {
           });
         }),
       );
+      return null;
     });
   }
 
