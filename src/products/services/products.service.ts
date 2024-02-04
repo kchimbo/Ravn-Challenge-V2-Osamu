@@ -20,6 +20,7 @@ import { CreateProductDto } from '../dto/create-product.dto';
 import { CategoryNotFoundException } from '../exceptions/category-not-found.exception';
 import { DeleteImageDto } from '../dto/delete-image.dto';
 import * as _ from 'lodash';
+import { UpdateProductDto } from '../dto/update-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -50,22 +51,37 @@ export class ProductsService {
         cursor: {
           id: cursor,
         },
-        where,
+        where: where,
+        include: {
+          category: true,
+          Image: true,
+        },
       });
     }
-    return this.prisma.product.findMany({
+    const r = await this.prisma.product.findMany({
       take: limit,
       where,
+      include: {
+        category: true,
+        Image: true,
+      },
     });
+
+    console.log(r);
+    return r;
   }
 
   async getProductDetails(productId: number) {
     try {
-      return await this.prisma.product.findUniqueOrThrow({
+      return await this.prisma.product.findUnique({
         where: {
           id: productId,
           isDisabled: false,
           deletedAt: null,
+        },
+        include: {
+          category: true,
+          Image: true,
         },
       });
     } catch (err) {
@@ -138,7 +154,7 @@ export class ProductsService {
     return id;
   }
 
-  async updateProduct(productId: number, details: ProductDetailsDto) {
+  async updateProduct(productId: number, details: UpdateProductDto) {
     console.log('Updating product...');
     console.log(details);
     try {

@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -41,6 +42,7 @@ import { ValidBody } from '../../utils/decorators';
 
 @ApiTags('Product')
 @Controller('products')
+@UseInterceptors(ClassSerializerInterceptor)
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
   @Get('/')
@@ -50,7 +52,7 @@ export class ProductsController {
   @UseInterceptors(new TransformDataInterceptor(ProductDetailsDto))
   @UsePipes(new ValidationPipe({ transform: true }))
   async listProducts(@Query() { cursor, limit }: PaginationParamsDto) {
-    return this.productsService.listProduct(limit, cursor);
+    return await this.productsService.listProduct(limit, cursor);
   }
 
   @ApiOperation({
@@ -86,7 +88,7 @@ export class ProductsController {
   })
   @UseInterceptors(new TransformDataInterceptor(ProductDetailsDto))
   async getProductDetails(@Param('id', ParseIntPipe) productId: number) {
-    return this.productsService.getProductDetails(productId);
+    return await this.productsService.getProductDetails(productId);
   }
 
   @ApiOperation({

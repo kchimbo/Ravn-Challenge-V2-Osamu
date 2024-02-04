@@ -1,18 +1,32 @@
-import { IsBoolean, IsNumber, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Exclude } from 'class-transformer';
 
-class UpdateProductDto {
+export class UpdateProductDto {
+  @Exclude()
+  id: number;
+
+  @IsOptional()
   @IsString()
   name: string;
 
-  @IsString()
-  description: string;
-
+  @IsOptional()
   @IsNumber()
   price: number;
 
+  @IsOptional()
   @IsNumber()
   stock: number;
 
-  @IsBoolean()
+  @Exclude()
+  createdAt: Date;
+
+  @Exclude()
+  updatedAt: Date;
+
+  @Exclude()
+  deletedAt: Date;
+
+  @IsOptional()
+  @Exclude({ toPlainOnly: true })
   isDisabled: boolean;
 }

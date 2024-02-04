@@ -183,6 +183,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
             slug: 'sample-category-1',
           },
         },
+        Image: {
+          create: [
+            {
+              url: 'url:image_for_product_1',
+              filename: 'image_for_product_1',
+            },
+          ],
+        },
       },
     });
 

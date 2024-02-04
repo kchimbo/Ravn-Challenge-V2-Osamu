@@ -1,32 +1,54 @@
 import { IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
-import { Exclude, Transform } from 'class-transformer';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
 
+@Expose()
+class CategoryDto {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+@Exclude()
+class ImageDto {
+  @Expose()
+  url: string;
+
+  @Expose()
+  id: string;
+  filename: string;
+  productId: number;
+}
+
+@Exclude()
 export class ProductDetailsDto {
-  @Exclude()
+  @Expose()
   id: number;
 
-  @IsOptional()
-  @IsString()
+  @Expose()
   name: string;
 
-  @IsOptional()
-  @IsNumber()
+  @Expose()
+  description: string;
+
+  @Expose()
+  @Type(() => CategoryDto)
+  category: CategoryDto;
+
+  @Expose()
   price: number;
 
-  @IsOptional()
-  @IsNumber()
+  @Expose()
   stock: number;
 
-  @Exclude()
   createdAt: Date;
 
-  @Exclude()
   updatedAt: Date;
 
-  @Exclude()
   deletedAt: Date;
 
-  @IsOptional()
-  @Exclude({ toPlainOnly: true })
   isDisabled: boolean;
+
+  @Expose()
+  @Type(() => ImageDto)
+  Image: ImageDto[];
 }
