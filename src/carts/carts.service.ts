@@ -1,8 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prima.service';
 import { OrdersService } from '../orders/services/orders.service';
+import { Prisma } from '@prisma/client';
+import { PrismaError } from '../prisma/prisma.errors';
+import { ProductNotFoundException } from '../products/exceptions/product-not-found.exception';
 @Injectable()
 export class CartsService {
+  private logger = new Logger(CartsService.name);
   constructor(
     private readonly ordersService: OrdersService,
     private readonly prismaService: PrismaService,
@@ -13,13 +17,16 @@ export class CartsService {
     return this.ordersService.createOrder(userId, cart);
   }
   async deleteCart(userId: number) {
-    const r = this.prismaService.cart.delete({
-      where: {
-        userId,
-      },
-    });
-    console.log(r);
-    return r;
+    try {
+      await this.prismaService.cart.delete({
+        where: {
+          userId,
+        },
+      });
+    } catch (err) {
+      this.logger.log(`The cart for the ${userId} does not exist`);
+    }
+    return await this.getOrCreateCart(userId);
   }
 
   async getCart(userId: number) {
@@ -45,26 +52,17 @@ export class CartsService {
         },
       },
     });
-    console.log('My cart...');
-    console.log(cart.cartItem.map((item) => console.log(item)));
-    console.log('Done');
     const totalPrice = cart.cartItem
       .map(({ quantity, product }) => {
-        console.log(product);
-        console.log(`Adding ${quantity} * ${product.price}`);
         return quantity * product.price;
       })
       .reduce((acc, current) => acc + current, 0);
 
-    console.log('--> CART');
-    console.log(cart);
-
     return { ...cart, totalPrice };
   }
 
-  private async getOrCreateCart(userId: number) {
-    console.log('Cart');
-    const { id } = await this.prismaService.cart.upsert({
+  async getOrCreateCart(userId: number) {
+    const cart = await this.prismaService.cart.upsert({
       where: {
         userId: userId,
       },
@@ -72,9 +70,32 @@ export class CartsService {
       create: {
         userId,
       },
+      include: {
+        cartItem: {
+          include: {
+            product: {
+              include: {
+                category: true,
+              },
+            },
+          },
+          where: {
+            product: {
+              isDisabled: false,
+              deletedAt: null,
+            },
+          },
+        },
+      },
     });
-    console.log(id);
-    return id;
+
+    const totalPrice = cart.cartItem
+      .map(({ quantity, product }) => {
+        return quantity * product.price;
+      })
+      .reduce((acc, current) => acc + current, 0);
+
+    return { ...cart, totalPrice };
   }
 
   /**
@@ -91,39 +112,61 @@ export class CartsService {
     // 3. update the quantity of an non-existing product of cart
     // 4. setting the quantity to zero deletes the items from the cart
     // 5. add a non-existant-product
-    const cartId = await this.getOrCreateCart(userId);
-    console.log('Got ' + cartId);
+    const { id: cartId } = await this.getOrCreateCart(userId);
     if (products.length == 0) {
-      return null;
+      throw new BadRequestException('The cart does not include any products');
     }
     for (const { productId, quantity } of products) {
       if (!quantity) {
-        /* Avoid an error when the product doesn't exist */
-        await this.prismaService.cartItem.deleteMany({
-          where: {
-            cartId,
-            productId,
-          },
-        });
+        try {
+          await this.prismaService.cartItem.delete({
+            where: {
+              cartId_productId: {
+                cartId: cartId,
+                productId: productId,
+              },
+            },
+          });
+        } catch (err) {
+          if (
+            err instanceof Prisma.PrismaClientKnownRequestError &&
+            err.code === PrismaError.ModelDoesNotExist
+          ) {
+            throw new BadRequestException(
+              `Unable to update the cart. The product ${productId} does not exists`,
+            );
+          }
+        }
       } else {
-        await this.prismaService.cartItem.upsert({
-          where: {
-            cartId_productId: {
+        try {
+          await this.prismaService.cartItem.upsert({
+            where: {
+              cartId_productId: {
+                cartId,
+                productId,
+              },
+            },
+            update: {
+              quantity,
+            },
+            create: {
               cartId,
               productId,
+              quantity,
             },
-          },
-          update: {
-            quantity,
-          },
-          create: {
-            cartId,
-            productId,
-            quantity,
-          },
-        });
+          });
+        } catch (err) {
+          if (
+            err instanceof Prisma.PrismaClientKnownRequestError &&
+            err.code === PrismaError.ForeignKeyConstraintError
+          ) {
+            throw new BadRequestException(
+              `Unable to update the cart. ${productId} does not exists`,
+            );
+          }
+        }
       }
     }
-    return this.getCart(userId);
+    return await this.getCart(userId);
   }
 }

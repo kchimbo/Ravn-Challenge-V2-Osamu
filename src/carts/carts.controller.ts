@@ -9,7 +9,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { CartsService } from './carts.service';
-import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/types/roles.enum';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -18,12 +18,16 @@ import { GetCurrentUserId } from '../auth/decorators/get-current-user-id.decorat
 import { CartDto } from './dto/cart.dto';
 import { UpdateCartDto } from './dto/update-cart.dto';
 import { ValidBody } from '../utils/decorators';
+import { TransformDataInterceptor } from '../utils/transform-data.interceptor';
+import { UserDto } from '../auth/dto/user.dto';
 
 @Controller('carts')
+@ApiTags('Cart')
 @UseInterceptors(ClassSerializerInterceptor)
 export class CartsController {
   constructor(private cartsService: CartsService) {}
   @Post('/')
+  @ApiBearerAuth('access_token')
   @UseGuards(JwtAuthGuard)
   async checkoutCart(@GetCurrentUserId() userId: number) {
     return this.cartsService.checkoutCart(userId);
@@ -34,29 +38,36 @@ export class CartsController {
     summary: 'Add/Update/Delete items on the cart of the current user',
   })
   @ApiBearerAuth('access_token')
+  @ApiBody({
+    type: UpdateCartDto,
+  })
   @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard)
   async updateCart(
     @GetCurrentUserId() userId: number,
     @ValidBody() updateCart: UpdateCartDto,
   ) {
-    return this.cartsService.updateItemCart(userId, updateCart);
+    const updatedCart = await this.cartsService.updateItemCart(
+      userId,
+      updateCart,
+    );
+    return new CartDto(updatedCart);
   }
 
   @ApiOperation({
-    summary: 'Get the cart of the current user',
+    summary: 'Get the current cart',
   })
   @ApiBearerAuth('access_token')
   @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard)
   @Get('/')
   async getCart(@GetCurrentUserId() userId: number) {
-    const cart = await this.cartsService.getCart(userId);
+    const cart = await this.cartsService.getOrCreateCart(userId);
     return new CartDto(cart);
   }
 
   @ApiOperation({
-    summary: 'Delete the cart of the current user',
+    summary: 'Clear the current cart',
   })
   @ApiBearerAuth('access_token')
   @UseGuards(JwtAuthGuard)

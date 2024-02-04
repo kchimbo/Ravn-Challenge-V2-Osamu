@@ -3,14 +3,14 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class AuthDto {
   @ApiProperty({
-    default: 'user@example.com',
+    default: 'client@example.com',
   })
   @IsNotEmpty()
   @IsEmail()
   email: string;
 
   @ApiProperty({
-    default: 'hunter2',
+    default: 'secret_password',
   })
   @IsNotEmpty()
   @IsString()

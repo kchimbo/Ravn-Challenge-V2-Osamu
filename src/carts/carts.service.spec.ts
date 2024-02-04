@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prima.service';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import { PrismaClient } from '@prisma/client';
 import { OrdersService } from '../orders/services/orders.service';
+import { BadRequestException } from '@nestjs/common';
 
 describe('CartsService', () => {
   let service: CartsService;
@@ -15,6 +16,7 @@ describe('CartsService', () => {
     userId: 2,
     createdAt: new Date(),
     updatedAt: null,
+    cartItem: [],
   };
 
   const dbCart = {
@@ -98,8 +100,22 @@ describe('CartsService', () => {
 
   it('should delete the cart', async () => {
     prisma.cart.delete.mockResolvedValueOnce(emptyCart);
+    prisma.cart.upsert.mockResolvedValueOnce({
+      id: 2,
+      userId: 2,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      cartItem: [],
+    } as any);
 
-    await expect(service.deleteCart(emptyCart.userId)).resolves.toBe(emptyCart);
+    await expect(service.deleteCart(emptyCart.userId)).resolves.toStrictEqual({
+      createdAt: expect.any(Date),
+      updatedAt: expect.any(Date),
+      cartItem: [],
+      id: 2,
+      totalPrice: 0,
+      userId: 2,
+    });
   });
 
   it('should not update the cart if the list of products is empty', async () => {
@@ -108,9 +124,12 @@ describe('CartsService', () => {
       userId: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
-    });
+      cartItem: [],
+    } as any);
 
-    await service.updateItemCart(1, { products: [] });
+    await expect(service.updateItemCart(1, { products: [] })).rejects.toThrow(
+      BadRequestException,
+    );
 
     expect(prisma.cartItem.deleteMany).not.toHaveBeenCalled();
     expect(prisma.cartItem.upsert).not.toHaveBeenCalled();
@@ -129,7 +148,7 @@ describe('CartsService', () => {
       ],
     });
 
-    expect(prisma.cartItem.deleteMany).toHaveBeenCalled();
+    expect(prisma.cartItem.delete).toHaveBeenCalled();
     expect(prisma.cartItem.upsert).not.toHaveBeenCalled();
   });
 

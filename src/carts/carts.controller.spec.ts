@@ -26,7 +26,7 @@ describe('CartsController', () => {
           useValue: {
             checkoutCart: jest.fn(),
             deleteCart: jest.fn(),
-            getCart: jest.fn(),
+            getOrCreateCart: jest.fn(),
             updateItemCart: jest.fn(),
           },
         },
@@ -53,7 +53,7 @@ describe('CartsController', () => {
 
   it('getCart should call cartsService.getCart', async () => {
     await controller.getCart(cart.userId);
-    expect(cartsService.getCart).toHaveBeenCalled();
+    expect(cartsService.getOrCreateCart).toHaveBeenCalled();
   });
 
   it('deleteCart should call cartsService.deleteCart', async () => {
