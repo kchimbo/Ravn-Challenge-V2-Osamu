@@ -17,6 +17,16 @@ model User {
   Order            Order[]
   OrderItem        OrderItem[]
   OutstandingToken OutstandingToken[]
+  ResetToken       ResetToken[]
+}
+
+model ResetToken {
+  id        Int      @id @default(autoincrement())
+  resetKey  String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Category {

@@ -3,7 +3,9 @@ import {
   Controller,
   Get,
   HttpCode,
+  Param,
   Post,
+  Query,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -17,6 +19,9 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBody,
+  ApiParam,
+  ApiProperty,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { GetCurrentUserId } from '../decorators/get-current-user-id.decorator';
 import { UserDto } from '../dto/user.dto';
@@ -25,6 +30,7 @@ import { RoleGuard } from '../guards/role.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { Role } from '../types/roles.enum';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
+import { ChangePasswordDto } from '../dto/change-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 
 @ApiTags('Authentication')
@@ -67,18 +73,33 @@ export class AuthController {
 
   @ApiBearerAuth('access_token')
   @ApiOperation({
-    summary: 'Reset the password of the current user',
+    summary: 'Change password of the current user',
+  })
+  @ApiBody({
+    type: ChangePasswordDto,
+  })
+  @Post('/changePassword')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(
+    @GetCurrentUserId() userId: number,
+    @ValidBody() changePasswordDto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(userId, changePasswordDto);
+  }
+
+  @Post('/resetPassword')
+  @ApiQuery({
+    name: 'resetKey',
+    required: false,
   })
   @ApiBody({
     type: ResetPasswordDto,
   })
-  @Post('/resetPassword')
-  @UseGuards(JwtAuthGuard)
   async resetPassword(
-    @GetCurrentUserId() userId: number,
-    @ValidBody() resetPassword: ResetPasswordDto,
+    @ValidBody() resetPasswordDto: ResetPasswordDto,
+    @Query('resetKey') resetKey?: string,
   ) {
-    return this.authService.resetPassword(userId, resetPassword);
+    return this.authService.resetPassword(resetPasswordDto, resetKey);
   }
 
   @ApiOperation({

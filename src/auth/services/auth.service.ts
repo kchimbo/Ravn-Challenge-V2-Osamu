@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prima.service';
 import * as _ from 'lodash';
+import { ChangePasswordDto } from '../dto/change-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 @Injectable()
 export class AuthService {
@@ -56,9 +57,9 @@ export class AuthService {
     return null;
   }
 
-  async resetPassword(
+  async changePassword(
     id: number,
-    { newPassword, currentPassword }: ResetPasswordDto,
+    { newPassword, currentPassword }: ChangePasswordDto,
   ) {
     const user = await this.getUser(id);
     if (user) {
@@ -74,6 +75,28 @@ export class AuthService {
       );
     }
     return null;
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto, resetKey?: string) {
+    if (!resetKey) {
+      if (resetPasswordDto.email) {
+        return this.usersService.createResetKeyForUser(resetPasswordDto.email);
+      } else {
+        throw new BadRequestException('Missing email in the body parameters');
+      }
+    } else {
+      if (resetPasswordDto.newPassword) {
+        console.log(`Resetting password for user`);
+        await this.usersService.resetPasswordForUser(
+          resetKey,
+          resetPasswordDto.newPassword,
+        );
+      } else {
+        throw new BadRequestException(
+          'Missing new password in the body parameters',
+        );
+      }
+    }
   }
 
   async logout(userId: number) {

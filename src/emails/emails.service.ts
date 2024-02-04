@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 
 @Injectable()
@@ -12,16 +12,16 @@ export class EmailsService {
     });
   }
 
-  async sendPasswordResetEmail() {
+  async sendPasswordResetEmail(email: string, resetPasswordKey: string) {
     await this.emailQueue.add('resetPassword', {
-      resetPasswordKey: 'abcd',
-      email: 'foobar@gmail.com',
+      resetPasswordKey,
+      email,
     });
   }
 
-  async sendChangedPasswordEmail() {
+  async sendChangedPasswordEmail(email: string) {
     await this.emailQueue.add('changedPassword', {
-      email: 'reset_password@example.com',
+      email,
     });
   }
 }

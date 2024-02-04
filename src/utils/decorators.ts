@@ -4,6 +4,7 @@ import { ValidationError } from 'class-validator';
 export const ValidBody = () =>
   Body(
     new ValidationPipe({
+      skipMissingProperties: true,
       whitelist: true,
       transform: true,
       exceptionFactory: (errors: ValidationError[] = []) => {

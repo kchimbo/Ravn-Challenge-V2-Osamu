@@ -29,6 +29,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     return this.$transaction([
       // Tokens
       this.outstandingToken.deleteMany(),
+      this.resetToken.deleteMany(),
       // Cart
       this.cartItem.deleteMany(),
       this.cart.deleteMany(),
