@@ -1,0 +1,32 @@
+version: "3"
+
+services:
+  postgres:
+    image: postgres:alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=ravn
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres:/var/lib/postgresql/data
+  redis:
+    image: 'redis:6.2-alpine'
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning
+    volumes:
+      - cache:/data
+
+  mailpit:
+    image: 'axllent/mailpit:latest'
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+volumes:
+  cache:
+  postgres:

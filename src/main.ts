@@ -28,7 +28,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('RAVN')
-    .setDescription('ofujimoto@gmail.com')
+    .setDescription('RAVN Tiny Store Project')
     .setVersion('1.0')
     .addBearerAuth(
       {
