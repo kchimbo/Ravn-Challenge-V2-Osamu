@@ -5,10 +5,10 @@ import { InjectQueue } from '@nestjs/bull';
 export class EmailsService {
   constructor(@InjectQueue('emails') private readonly emailQueue) {}
 
-  async sendProductInStockEmail() {
+  async sendProductInStockEmail(email: string, name: string) {
     await this.emailQueue.add('productInStock', {
-      productId: 1,
-      userId: 100,
+      email,
+      name,
     });
   }
 

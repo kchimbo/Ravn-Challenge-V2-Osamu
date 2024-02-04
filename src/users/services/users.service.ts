@@ -5,7 +5,6 @@ import * as bcrypt from 'bcrypt';
 import { EmailsService } from '../../emails/emails.service';
 import { Prisma } from '@prisma/client';
 import { PrismaError } from '../../prisma/prisma.errors';
-import { CategoryNotFoundException } from '../../products/exceptions/category-not-found.exception';
 
 type User = any;
 @Injectable()

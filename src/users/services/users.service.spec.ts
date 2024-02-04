@@ -3,6 +3,8 @@ import { UsersService } from './users.service';
 import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 import { PrismaService } from '../../prisma/prima.service';
 import { PrismaClient, Role } from '@prisma/client';
+import { JwtService } from '@nestjs/jwt';
+import { EmailsService } from '../../emails/emails.service';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -17,7 +19,17 @@ describe('UsersService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService, PrismaService],
+      providers: [
+        UsersService,
+        PrismaService,
+        {
+          provide: EmailsService,
+          useValue: {
+            sendPasswordResetEmail: jest.fn(),
+            sendChangedPasswordEmail: jest.fn(),
+          },
+        },
+      ],
     })
       .overrideProvider(PrismaService)
       .useValue(mockDeep<PrismaClient>())
