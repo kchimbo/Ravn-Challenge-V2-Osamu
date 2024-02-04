@@ -507,8 +507,6 @@ describe('ProductController (e2e)', () => {
           .withBearerToken(accessToken)
           .withMultiPartFormData(form);
 
-        console.log(response.json);
-
         return pactum
           .spec()
           .delete(`/products/${response.json.id}/images`)

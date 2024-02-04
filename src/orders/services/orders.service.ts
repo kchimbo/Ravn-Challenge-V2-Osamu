@@ -115,8 +115,6 @@ export class OrdersService {
       },
     });
 
-    console.log(orders);
-
     this.logger.log(`Found orders for user ${userId}`);
     this.logger.log(orders);
     return orders;

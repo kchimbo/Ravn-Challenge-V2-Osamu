@@ -67,7 +67,6 @@ export class ProductsService {
       },
     });
 
-    console.log(r);
     return r;
   }
 
@@ -110,8 +109,6 @@ export class ProductsService {
     files?: Array<Express.Multer.File>,
   ) {
     let categoryId;
-    console.log(product);
-    console.log(files);
     // check if category exists
     try {
       categoryId = await this.prisma.category.findUniqueOrThrow({
@@ -129,8 +126,6 @@ export class ProductsService {
       throw err;
     }
 
-    console.log(categoryId);
-
     const createdProduct = await this.prisma.product.create({
       data: {
         ...product,
@@ -143,18 +138,18 @@ export class ProductsService {
     });
 
     if (files != undefined && files.length > 0) {
-      console.log('Creating new files');
+      this.logger.log(
+        `${files.length} files for product ${createdProduct.id}. Uploading files`,
+      );
       await this.addImagesToProduct(createdProduct.id, files);
     } else {
-      console.log('Files are empty. Skipping');
+      this.logger.log(`No files for product ${createdProduct.id}. Skipping`);
     }
 
     return await this.getProductDetails(createdProduct.id);
   }
 
   async updateProduct(productId: number, details: UpdateProductDto) {
-    console.log('Updating product...');
-    console.log(details);
     try {
       return await this.prisma.product.update({
         where: {
@@ -230,7 +225,6 @@ export class ProductsService {
   }
 
   async deleteProduct(productId: number) {
-    console.log('Deleting product....');
     try {
       return await this.prisma.product.delete({
         where: {
@@ -276,7 +270,6 @@ export class ProductsService {
   private async uploadFile(file: Express.Multer.File) {
     const extension = file.originalname.split('.').slice(-1);
     const filename = `${uuidv4()}.${extension}`;
-    console.log(`Uploading file ${file.filename} as ${filename} to S3`);
     return await this.aws.uploadFile(file.buffer, filename);
   }
 

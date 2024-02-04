@@ -6,7 +6,6 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Patch,
   Post,
   Put,
   Query,
@@ -37,7 +36,6 @@ import { ProductDetailsDto } from '../dto/product-details.dto';
 import { PaginationParamsDto } from '../dto/pagination-params.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CreateProductDto } from '../dto/create-product.dto';
-import { FormDataRequest } from 'nestjs-form-data';
 import { ValidBody } from '../../utils/decorators';
 
 @ApiTags('Product')
@@ -156,8 +154,6 @@ export class ProductsController {
     @Param('id', ParseIntPipe) productId: number,
     @Body() details: ProductDetailsDto,
   ) {
-    console.log(productId);
-    console.log(details);
     return this.productsService.updateProduct(productId, details);
   }
 
