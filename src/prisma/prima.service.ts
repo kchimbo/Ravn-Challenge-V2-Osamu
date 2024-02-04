@@ -3,26 +3,26 @@ import { Prisma, PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
-  constructor() {
-    super({
-      log: [
-        {
-          emit: 'event',
-          level: 'query',
-        },
-      ],
-    });
-  }
+  // constructor() {
+  //   super({
+  //     log: [
+  //       {
+  //         emit: 'event',
+  //         level: 'query',
+  //       },
+  //     ],
+  //   });
+  // }
   async onModuleInit() {
     await this.$connect();
     this.$use(this.productSoftDeleteMiddleware);
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    this.$on('query', async (e) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      console.log(`${e.query} ${e.params}`);
-    });
+    // this.$on('query', async (e) => {
+    //   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //   // @ts-ignore
+    //   console.log(`${e.query} ${e.params}`);
+    // });
   }
 
   async cleanDb() {

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { UsersService } from '../../users/services/users.service';
@@ -9,11 +10,11 @@ import { JsonWebTokenError, JwtService } from '@nestjs/jwt';
 import { v4 as uuidv4 } from 'uuid';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prima.service';
-import * as _ from 'lodash';
 import { ChangePasswordDto } from '../dto/change-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 @Injectable()
 export class AuthService {
+  private logger = new Logger(AuthService.name);
   constructor(
     private configService: ConfigService,
     private jwtService: JwtService,
@@ -70,7 +71,7 @@ export class AuthService {
         await this.logout(id);
         return result;
       }
-      throw new UnauthorizedException(
+      throw new BadRequestException(
         "The supplied password doesn't match the current password",
       );
     }
@@ -86,7 +87,6 @@ export class AuthService {
       }
     } else {
       if (resetPasswordDto.newPassword) {
-        console.log(`Resetting password for user`);
         await this.usersService.resetPasswordForUser(
           resetKey,
           resetPasswordDto.newPassword,
@@ -109,7 +109,7 @@ export class AuthService {
           isDenylisted: true,
         },
       });
-    console.log(
+    this.logger.log(
       `Denylisted ${outstandingTokens.count} tokens for user ${userId}`,
     );
     return null;
@@ -135,12 +135,11 @@ export class AuthService {
           },
         });
       if (isActiveToken.length > 0) {
-        console.log(sub, jti);
         const newToken = this.jwtService.signAsync(
           {
             sub: sub,
             jti: uuidv4(),
-            role: isActiveToken.user.role,
+            role: isActiveToken[0].user.role,
           },
           {
             secret: this.configService.get<string>('auth.accessTokenSecret'),
@@ -149,7 +148,7 @@ export class AuthService {
         );
         return { accessTone: newToken };
       } else {
-        throw new UnauthorizedException(
+        throw new BadRequestException(
           'The supplied token is valid but has been marked as denylisted',
         );
       }
