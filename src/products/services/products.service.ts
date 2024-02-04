@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prima.service';
 import { Prisma } from '@prisma/client';
 import { ProductAlreadyLiked } from '../exceptions/product-already-liked';
@@ -73,7 +73,7 @@ export class ProductsService {
 
   async getProductDetails(productId: number) {
     try {
-      return await this.prisma.product.findUnique({
+      return await this.prisma.product.findUniqueOrThrow({
         where: {
           id: productId,
           isDisabled: false,
@@ -131,27 +131,25 @@ export class ProductsService {
 
     console.log(categoryId);
 
-    const [{ id }] = await this.prisma.$transaction([
-      this.prisma.product.create({
-        data: {
-          ...product,
-          category: {
-            connect: {
-              id: categoryId.id,
-            },
+    const createdProduct = await this.prisma.product.create({
+      data: {
+        ...product,
+        category: {
+          connect: {
+            id: categoryId.id,
           },
         },
-      }),
-    ]);
+      },
+    });
 
     if (files != undefined && files.length > 0) {
       console.log('Creating new files');
-      await this.addImagesToProduct(id, files);
+      await this.addImagesToProduct(createdProduct.id, files);
     } else {
       console.log('Files are empty. Skipping');
     }
 
-    return id;
+    return await this.getProductDetails(createdProduct.id);
   }
 
   async updateProduct(productId: number, details: UpdateProductDto) {
@@ -202,6 +200,16 @@ export class ProductsService {
         filename: true,
       },
     });
+
+    if (deleteImageParameters.id) {
+      const dbImages = productImage.map(({ id }) => id);
+      if (!dbImages.includes(deleteImageParameters.id)) {
+        throw new NotFoundException(
+          `The image ${deleteImageParameters.id} was not found`,
+        );
+      }
+    }
+
     return await lastValueFrom(
       of(...productImage).pipe(
         mergeMap(({ id, filename }) =>

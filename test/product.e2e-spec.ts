@@ -53,31 +53,62 @@ describe('ProductController (e2e)', () => {
 
   describe('ProductController', () => {
     describe('List products', () => {
-      it("doesn't return deleted or disabled products", async () => {
+      it('should return the first five active products with the default parameters', async () => {
         return pactum
           .spec()
           .get('/products')
           .expectStatus(200)
           .expectJsonLength(5);
       });
+      it('should only return 2 active products when setting the limit to 2', async () => {
+        return pactum
+          .spec()
+          .get('/products?limit=2')
+          .expectStatus(200)
+          .expectJsonLength(2);
+      });
+      it('should return the next five products when the setting the cursor to 5', async () => {
+        return pactum
+          .spec()
+          .get('/products?cursor=5')
+          .expectStatus(200)
+          .expectJsonLength(1);
+      });
+      it('should return the next two products when setting the limit and cursor to 2', async () => {
+        return pactum
+          .spec()
+          .get('/products?limit=2&cursor=2')
+          .expectStatus(200)
+          .expectJsonLength(2);
+      });
+      it("shouldn't return disabled or deleted products", async () => {
+        return pactum
+          .spec()
+          .get('/products?cursor=6')
+          .expectStatus(200)
+          .expectJsonLength(0);
+      });
     });
     describe('Get product details', () => {
-      it('returns an active product', async () => {
+      it('should return the details of the product', async () => {
         await pactum.spec().get(`/products/1`).expectStatus(200);
       });
-      it('throws an error when the product was deleted', async () => {
+      it('should throw an error when the product was deleted', async () => {
         await pactum.spec().get(`/products/8`).expectStatus(404);
       });
-      it('throws an error when the product was disabled', async () => {
+      it('should throw an error when the product was disabled', async () => {
         await pactum.spec().get(`/products/7`).expectStatus(404);
+      });
+      it("should throw an error when the product doesn't exist", async () => {
+        await pactum.spec().get(`/products/100`).expectStatus(404);
       });
     });
     describe('Like product', () => {
-      it('throws an error when the user liking the product is a guest', async () => {
+      it('should throw an error when the user liking the product is a guest', async () => {
         await pactum.spec().post(`/products/1/like`).expectStatus(401);
       });
 
-      it('succeeds when liking a new product for the first time', async () => {
+      it('should succeed when the product is liked for the first time', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
           email: credentials.client.email,
           password: credentials.client.password,
@@ -89,7 +120,7 @@ describe('ProductController (e2e)', () => {
           .withBearerToken(response.json.accessToken)
           .expectStatus(201);
       });
-      it('throws an error when the product liked was deleted', async () => {
+      it('should throw an error when the product liked was deleted', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
           email: credentials.client.email,
           password: credentials.client.password,
@@ -101,7 +132,7 @@ describe('ProductController (e2e)', () => {
           .withBearerToken(response.json.accessToken)
           .expectStatus(404);
       });
-      it('throws an error when the product liked was disabled', async () => {
+      it('should throw an error when the product liked was disabled', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
           email: credentials.client.email,
           password: credentials.client.password,
@@ -113,7 +144,7 @@ describe('ProductController (e2e)', () => {
           .withBearerToken(response.json.accessToken)
           .expectStatus(404);
       });
-      it('throws an error when the product was already liked', async () => {
+      it('should throw an error when the product was already liked', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
           email: credentials.client.email,
           password: credentials.client.password,
@@ -130,10 +161,10 @@ describe('ProductController (e2e)', () => {
       });
     });
     describe('Delete product', () => {
-      it('throws an error when the user is a guest', async () => {
+      it('should throw an error when the user is a guest', async () => {
         await pactum.spec().delete(`/products/1`).expectStatus(401);
       });
-      it('throws an error when the user is a client', async () => {
+      it('should throw an error when the user is a client', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
           email: credentials.client.email,
           password: credentials.client.password,
@@ -145,7 +176,7 @@ describe('ProductController (e2e)', () => {
           .withBearerToken(response.json.accessToken)
           .expectStatus(403);
       });
-      it('succeeds when the product is active', async () => {
+      it('should succeed when the product is active', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
           email: credentials.manager.email,
           password: credentials.manager.password,
@@ -160,7 +191,10 @@ describe('ProductController (e2e)', () => {
     });
 
     describe('Update product details', () => {
-      it('throws an error if a user tries to update a product', async () => {
+      it('should throw an error if a guest tries to update a product', async () => {
+        await pactum.spec().put(`/products/1`).expectStatus(401);
+      });
+      it('should an error if a client tries to update a product', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
           email: credentials.client.email,
           password: credentials.client.password,
@@ -171,6 +205,18 @@ describe('ProductController (e2e)', () => {
           .put(`/products/1`)
           .withBearerToken(response.json.accessToken)
           .expectStatus(403);
+      });
+      it("should throw an error if the product doesn't exist", async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+
+        await pactum
+          .spec()
+          .put(`/products/100`)
+          .withBearerToken(response.json.accessToken)
+          .expectStatus(404);
       });
       it('can update the name of the product', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
@@ -264,7 +310,7 @@ describe('ProductController (e2e)', () => {
       });
     });
     describe('Add Image', () => {
-      it('add a single image to a product', async () => {
+      it('should add a single image to a product', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
           email: credentials.manager.email,
           password: credentials.manager.password,
@@ -287,7 +333,7 @@ describe('ProductController (e2e)', () => {
           .expectStatus(201);
       });
 
-      it('add multiple images to a product', async () => {
+      it('should add multiple images to a product', async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
           email: credentials.manager.email,
           password: credentials.manager.password,
@@ -317,14 +363,157 @@ describe('ProductController (e2e)', () => {
           .expectStatus(201);
       });
     });
-    describe('Remove Image', () => {
-      it('deletes an image from a product', async () => {
+    describe('Create Product', () => {
+      it('should throw an error if a guest tries to create a product', async () => {
+        await pactum.spec().post(`/products`).expectStatus(401);
+      });
+      it('should throw an error if a client tries to create a product', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.client.email,
+          password: credentials.client.password,
+        });
+
+        await pactum
+          .spec()
+          .post(`/products`)
+          .withBearerToken(response.json.accessToken)
+          .expectStatus(403);
+      });
+      it('should create a new product', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+        const accessToken = response.json.accessToken;
+        const form = new FormData();
+        form.append('name', 'creating a new product');
+        form.append('price', 1234);
+        form.append('category', 'sample-category-1');
+        form.append('stock', 100);
+        await pactum
+          .spec()
+          .post('/products')
+          .withBearerToken(accessToken)
+          .withMultiPartFormData(form)
+          .expectStatus(201);
+      });
+      it('should throw an error if required fields are missing', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+        const accessToken = response.json.accessToken;
+        const form = new FormData();
+        await pactum
+          .spec()
+          .post('/products')
+          .withBearerToken(accessToken)
+          .withMultiPartFormData(form)
+          .expectStatus(400);
+      });
+    });
+    describe('Remove(s) Image', () => {
+      it('should throw an error if a guest tries to remove an image', async () => {
+        await pactum.spec().post(`/products`).expectStatus(401);
+      });
+      it('should throw an error if a client tries to remove an image', async () => {
+        const response = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.client.email,
+          password: credentials.client.password,
+        });
+
+        await pactum
+          .spec()
+          .delete(`/products/images/1234`)
+          .withBearerToken(response.json.accessToken)
+          .expectStatus(403);
+      });
+      it("should throw an error if the image doesn't exist", async () => {
         const response = await pactum.spec().post('/auth/login').withJson({
           email: credentials.manager.email,
           password: credentials.manager.password,
         });
 
-        // TODO: finish
+        await pactum
+          .spec()
+          .delete(`/products/images/1234`)
+          .withBearerToken(response.json.accessToken)
+          .expectStatus(404);
+      });
+      it('should delete an image from a product', async () => {
+        const login = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+        const accessToken = login.json.accessToken;
+
+        const form = new FormData();
+        form.append('name', 'remove a single image');
+        form.append('price', 1234);
+        form.append('category', 'sample-category-1');
+        form.append('stock', 100);
+        form.append(
+          'files',
+          fs.readFileSync(path.resolve(__dirname, './input1.txt')),
+          {
+            filename: 'input1.txt',
+          },
+        );
+
+        const response = await pactum
+          .spec()
+          .post('/products')
+          .withBearerToken(accessToken)
+          .withMultiPartFormData(form);
+
+        const [imageId] = response.json.Image.map(({ id }) => id);
+
+        return pactum
+          .spec()
+          .delete(`/products/images/${imageId}`)
+          .withBearerToken(accessToken)
+          .expectStatus(200);
+      });
+      it('should delete all images from a product', async () => {
+        const login = await pactum.spec().post('/auth/login').withJson({
+          email: credentials.manager.email,
+          password: credentials.manager.password,
+        });
+        const accessToken = login.json.accessToken;
+
+        const form = new FormData();
+        form.append('name', 'remove all images');
+        form.append('price', 1234);
+        form.append('category', 'sample-category-1');
+        form.append('stock', 100);
+        form.append(
+          'files',
+          fs.readFileSync(path.resolve(__dirname, './input1.txt')),
+          {
+            filename: 'input1.txt',
+          },
+        );
+        form.append(
+          'files',
+          fs.readFileSync(path.resolve(__dirname, './input2.txt')),
+          {
+            filename: 'input2.txt',
+          },
+        );
+
+        const response = await pactum
+          .spec()
+          .post('/products')
+          .withBearerToken(accessToken)
+          .withMultiPartFormData(form);
+
+        console.log(response.json);
+
+        return pactum
+          .spec()
+          .delete(`/products/${response.json.id}/images`)
+          .withBearerToken(accessToken)
+          .expectStatus(200);
       });
     });
   });
