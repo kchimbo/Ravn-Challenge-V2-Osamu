@@ -162,7 +162,7 @@ export class AuthController {
   @Get('/manager')
   @Roles(Role.Manager)
   @UseGuards(JwtAuthGuard, RoleGuard)
-  async managerOnly() {
-    return 'managers_only';
+  async managerOnly(@GetCurrentUserId() userId: number) {
+    return await this.authService.getUser(userId);
   }
 }

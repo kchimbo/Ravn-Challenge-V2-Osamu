@@ -60,7 +60,10 @@ export class UsersService {
         },
       },
     });
+    console.log(existingKey);
+    console.log(`my value...`);
     if (!existingKey) {
+      console.log('creating a new key');
       const resetKey = crypto.randomBytes(20).toString('hex');
       try {
         const token = await this.prisma.resetToken.create({
