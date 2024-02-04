@@ -6,6 +6,9 @@ import { PrismaClient, Role } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { EmailsService } from '../../emails/services/emails.service';
 import { EmailsProcessor } from '../../emails/processors/emails.processor';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { PrismaError } from '../../prisma/prisma.errors';
+import { BadRequestException } from '@nestjs/common';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -103,11 +106,55 @@ describe('UsersService', () => {
     );
   });
 
+  it("should throw an error if the email doesn't exist", async () => {
+    prisma.resetToken.findFirst.mockResolvedValueOnce(null);
+
+    prisma.resetToken.create.mockImplementation(() => {
+      throw new PrismaClientKnownRequestError('', {
+        code: PrismaError.ModelDoesNotExist,
+        clientVersion: '1',
+      });
+    });
+
+    await expect(
+      service.createResetKeyForUser(credentials.email),
+    ).rejects.toThrow(BadRequestException);
+  });
+
   it('should update the password of the user', async () => {
     prisma.user.update.mockResolvedValueOnce(credentials);
 
     await expect(
       service.updatePassword(credentials.id, credentials.password),
     ).resolves.toBe(credentials);
+  });
+
+  it('should reset the password of the user', async () => {
+    prisma.resetToken.findUniqueOrThrow.mockResolvedValueOnce({
+      id: 1,
+      userId: 1,
+      user: {
+        email: 'client@example.com',
+      },
+    } as any);
+
+    await service.resetPasswordForUser('reset_token', 'new_password');
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      data: {
+        password: expect.any(String),
+      },
+      where: {
+        id: 1,
+      },
+    });
+    expect(prisma.resetToken.delete).toHaveBeenCalledWith({
+      where: {
+        id: 1,
+      },
+    });
+    expect(email.sendChangedPasswordEmail).toHaveBeenCalledWith(
+      'client@example.com',
+    );
   });
 });

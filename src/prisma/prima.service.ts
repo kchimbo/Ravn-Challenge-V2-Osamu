@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Prisma, PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+/* istanbul ignore file */
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   // constructor() {
